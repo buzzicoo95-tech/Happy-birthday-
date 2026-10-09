@@ -1,0 +1,165 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    font-family: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    color: #5A3D4A;
+    background-color: #FFF9FB;
+  }
+}
+
+.font-display {
+  font-family: 'Playfair Display', Georgia, serif;
+}
+
+.font-luxury {
+  font-family: 'Cinzel', Georgia, serif;
+}
+
+.font-handwriting {
+  font-family: 'Caveat', cursive;
+}
+
+/* Premium Soft Pink + White Glassmorphism */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(248, 200, 220, 0.7);
+  box-shadow: 0 12px 35px -8px rgba(232, 137, 173, 0.16), 0 4px 14px rgba(248, 200, 220, 0.2);
+}
+
+.glass-panel-subtle {
+  background: rgba(253, 232, 241, 0.65);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(248, 200, 220, 0.5);
+}
+
+.glass-panel-gold {
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1.5px solid rgba(217, 164, 65, 0.35);
+  box-shadow: 0 12px 35px -8px rgba(217, 164, 65, 0.18), 0 4px 16px rgba(248, 200, 220, 0.25);
+}
+
+.glass-input {
+  background: rgba(255, 255, 255, 0.85);
+  border: 1.5px solid rgba(248, 200, 220, 0.8);
+  color: #5A3D4A;
+}
+
+.glass-input:focus {
+  border-color: #E889AD;
+  background: #FFFFFF;
+  box-shadow: 0 0 20px rgba(232, 137, 173, 0.25);
+}
+
+/* Premium Pink Gradient Button */
+.btn-pink-gradient {
+  background: linear-gradient(135deg, #F7A8C4, #E889AD);
+  color: #FFFFFF;
+  box-shadow: 0 8px 24px -4px rgba(232, 137, 173, 0.45);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-pink-gradient:hover {
+  background: linear-gradient(135deg, #f9b6cd, #ee96b7);
+  box-shadow: 0 10px 28px -2px rgba(232, 137, 173, 0.55);
+}
+
+.btn-pink-gradient:active {
+  transform: scale(0.97);
+}
+
+/* Custom glow and float animations */
+@keyframes floatSlow {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-12px) rotate(3deg); }
+}
+
+@keyframes floatGentle {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-8px) rotate(-2deg); }
+}
+
+@keyframes pulsePinkGlow {
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  50% { opacity: 0.85; transform: scale(1.08); }
+}
+
+@keyframes petalSway {
+  0% { transform: translate(0, 0) rotate(0deg); opacity: 0; }
+  15% { opacity: 0.7; }
+  50% { transform: translate(15px, 60px) rotate(45deg); opacity: 0.8; }
+  85% { opacity: 0.7; }
+  100% { transform: translate(-10px, 120px) rotate(90deg); opacity: 0; }
+}
+
+@keyframes heartRain {
+  0% {
+    transform: translateY(-8vh) translateX(0) rotate(-15deg);
+    opacity: 0;
+  }
+  12% {
+    opacity: 0.85;
+  }
+  50% {
+    transform: translateY(50vh) translateX(18px) rotate(15deg);
+    opacity: 0.9;
+  }
+  88% {
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateY(108vh) translateX(-12px) rotate(35deg);
+    opacity: 0;
+  }
+}
+
+.animate-heart-rain {
+  animation: heartRain linear infinite;
+}
+
+.animate-float-slow {
+  animation: floatSlow 6s ease-in-out infinite;
+}
+
+.animate-float-gentle {
+  animation: floatGentle 4.5s ease-in-out infinite;
+}
+
+.animate-pulse-pink {
+  animation: pulsePinkGlow 4s ease-in-out infinite;
+}
+
+.shimmer-pink-text {
+  background: linear-gradient(90deg, #E889AD 0%, #D9A441 35%, #F7A8C4 70%, #E889AD 100%);
+  background-size: 200% auto;
+  color: transparent;
+  -webkit-background-clip: text;
+  background-clip: text;
+  animation: shimmerEffect 5s linear infinite;
+}
+
+@keyframes shimmerEffect {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* Custom scrollbar in pink aesthetic */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #FDE8F1;
+}
+::-webkit-scrollbar-thumb {
+  background: #F8C8DC;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #E889AD;
+}

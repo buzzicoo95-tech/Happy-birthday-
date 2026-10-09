@@ -1,0 +1,6 @@
+{
+  "name": "SoulSync Birthday Experience",
+  "description": "A luxury, interactive, mobile-first birthday surprise web app with friendship compatibility, personal letter, gift reveal, and WhatsApp status generator.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
