@@ -13,7 +13,6 @@ import {
   Cake,
   RotateCcw,
   Smartphone,
-  HelpCircle,
   Gift,
   Check
 } from 'lucide-react';
@@ -43,7 +42,6 @@ import { EnvelopeLetter } from './components/EnvelopeLetter';
 import { MeVsYou } from './components/MeVsYou';
 import { MemoriesSlideshow } from './components/MemoriesSlideshow';
 import { StatusCanvasModal } from './components/StatusCanvasModal';
-import { CreatorGuideModal } from './components/CreatorGuideModal';
 
 const INITIAL_ANSWERS: UserAnswers = {
   name: '',
@@ -1866,18 +1864,6 @@ export default function App() {
           <Heart className="w-3.5 h-3.5 fill-[#E889AD] text-[#E889AD]" />
           <span>Made with love for WhatsApp surprise delivery</span>
         </div>
-
-        {/* Creator Guide button for configuring Google Sheets */}
-        <button
-          onClick={() => {
-            sound.playClick();
-            setIsGuideModalOpen(true);
-          }}
-          className="text-[11px] text-[#5A3D4A]/60 hover:text-[#E889AD] underline inline-flex items-center gap-1 transition-colors cursor-pointer"
-        >
-          <HelpCircle className="w-3 h-3" />
-          <span>Google Apps Script Setup</span>
-        </button>
       </footer>
 
       {/* WhatsApp Status Generator Modal (1080x1920 9:16 Canvas) */}
@@ -1888,12 +1874,6 @@ export default function App() {
         senderName={MY_NAME}
         similarityScore={matchDetails.percentage}
         matchingCategories={matchDetails.breakdown.filter(b => b.isMatch)}
-      />
-
-      {/* Creator Setup Guide Modal */}
-      <CreatorGuideModal
-        isOpen={isGuideModalOpen}
-        onClose={() => setIsGuideModalOpen(false)}
       />
     </div>
   );
