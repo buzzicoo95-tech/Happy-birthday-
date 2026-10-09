@@ -13,7 +13,9 @@ import {
   Cake,
   RotateCcw,
   Smartphone,
-  Gift
+  HelpCircle,
+  Gift,
+  Check
 } from 'lucide-react';
 
 import {
@@ -41,16 +43,17 @@ import { EnvelopeLetter } from './components/EnvelopeLetter';
 import { MeVsYou } from './components/MeVsYou';
 import { MemoriesSlideshow } from './components/MemoriesSlideshow';
 import { StatusCanvasModal } from './components/StatusCanvasModal';
+import { CreatorGuideModal } from './components/CreatorGuideModal';
 
 const INITIAL_ANSWERS: UserAnswers = {
   name: '',
   birthday: '',
   feeling: '',
   favoriteColor: '',
-  favoriteFood: '',
-  favoriteClothes: '',
+  favoriteFood: [],
+  favoriteClothes: [],
   favoriteMovie: '',
-  favoriteSong: '',
+  favoriteSubjects: [],
   favoriteSport: '',
   favoritePlace: '',
   drink: '',
@@ -73,25 +76,39 @@ const COLOR_PRESETS = [
 ];
 
 const FOOD_PRESETS = [
-  '🍕 Pizza',
+  '🍚 Biryani',
+  '🍗 Chicken Karahi',
+  '🍲 Chicken Handi',
+  '🍛 Nihari',
+  '🍖 Pulao',
+  '🥘 Haleem',
+  '🍲 Daal',
+  '🥬 Sabzi',
+  '🍢 Seekh Kabab',
+  '🍗 Chicken Tikka',
+  '🌯 Shawarma',
   '🍔 Burger',
-  '🍛 Biryani',
+  '🍕 Pizza',
+  '🍟 Fries',
+  '🥙 Paratha Roll',
+  '🫓 Naan / Roti',
+  '🍜 Chow Mein',
   '🍝 Pasta',
-  '🍗 BBQ',
-  '🍣 Sushi',
-  '🌮 Tacos',
-  '🍰 Dessert',
-  'Other'
+  '🌮 Other'
 ];
 
 const CLOTHES_PRESETS = [
-  'Casual',
-  'Formal',
-  'Streetwear',
-  'Traditional',
-  'Sportswear',
-  'Oversized',
-  'Other'
+  '👔 Kameez Shalwar',
+  '🥻 Shalwar Kameez',
+  '🤵 Sherwani',
+  '👕 Kurta Pajama',
+  '👗 Pakistani Traditional Dress',
+  '🧥 Waistcoat',
+  '👔 Pant Shirt',
+  '👖 Jeans & T-Shirt',
+  '👕 Casual Wear',
+  '🏃 Sports Wear',
+  '👗 Other'
 ];
 
 const MOVIE_PRESETS = [
@@ -105,14 +122,20 @@ const MOVIE_PRESETS = [
   'Other'
 ];
 
-const SONG_PRESETS = [
-  'Viva La Vida',
-  'Blinding Lights',
-  'Yellow - Coldplay',
-  'Shape of You',
-  'Someone Like You',
-  'Bohemian Rhapsody',
-  'Other'
+const SUBJECT_PRESETS = [
+  '🇬🇧 English',
+  '🇵🇰 Urdu',
+  '💻 Computer',
+  '🧬 Biology',
+  '⚗️ Chemistry',
+  '📐 Mathematics',
+  '🇵🇰 Pakistan Studies',
+  '☪️ Islamiat',
+  '🌍 Geography',
+  '📖 Physics',
+  '📚 History',
+  '🎨 Arts',
+  '📝 Other'
 ];
 
 const SPORT_PRESETS = [
@@ -199,6 +222,7 @@ export default function App() {
 
   // Modals state
   const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
+  const [isGuideModalOpen, setIsGuideModalOpen] = useState(false);
 
   // Submission state & guards
   const [hasSubmitted, setHasSubmitted] = useState(false);
@@ -238,6 +262,49 @@ export default function App() {
     }
 
     setCurrentStep(nextStep);
+  };
+
+  // Helper to toggle multi-select options (Food, Clothes, Subjects)
+  const handleToggleMultiSelect = (
+    key: 'favoriteFood' | 'favoriteClothes' | 'favoriteSubjects',
+    rawItemValue: string
+  ) => {
+    sound.playPop();
+    const cleanVal = rawItemValue.replace(/^[^\w\s]+\s*/, '').trim() || rawItemValue.trim();
+    const currentList = answers[key] || [];
+    const exists = currentList.includes(cleanVal);
+    const updated = exists
+      ? currentList.filter(item => item !== cleanVal)
+      : [...currentList, cleanVal];
+
+    setAnswers(prev => ({ ...prev, [key]: updated }));
+
+    // If an added item matches Farhan's preference, trigger match feedback
+    if (!exists && key in MY_PREFERENCES) {
+      const prefKey = key as keyof typeof MY_PREFERENCES;
+      const { isMatch } = evaluateCategoryMatch(prefKey, updated, MY_PREFERENCES[prefKey]);
+      if (isMatch) {
+        sound.playMatchChime();
+        const feedback = getRandomFeedback(true);
+        setMatchNotification(feedback);
+        setTimeout(() => setMatchNotification(null), 2500);
+      }
+    }
+  };
+
+  // Helper to add custom typed multi-select option
+  const handleAddCustomMultiSelect = (
+    key: 'favoriteFood' | 'favoriteClothes' | 'favoriteSubjects'
+  ) => {
+    const trimmed = customInput.trim();
+    if (!trimmed) return;
+    sound.playPop();
+    const currentList = answers[key] || [];
+    if (!currentList.includes(trimmed)) {
+      const updated = [...currentList, trimmed];
+      setAnswers(prev => ({ ...prev, [key]: updated }));
+    }
+    setCustomInput('');
   };
 
   // Submit response to Google Sheets on final match reveal with submission guard
@@ -360,7 +427,7 @@ export default function App() {
           'favoriteFood',
           'favoriteClothes',
           'favoriteMovie',
-          'favoriteSong',
+          'favoriteSubjects',
           'favoriteSport',
           'favoritePlace',
           'drink',
@@ -407,7 +474,7 @@ export default function App() {
       </AnimatePresence>
 
       {/* MAIN EXPERIENCE CONTAINER */}
-      <main className="flex-1 flex flex-col items-center justify-center w-full px-4 py-6 sm:py-10 max-w-2xl mx-auto">
+      <main className="relative z-20 flex-1 flex flex-col items-center justify-center w-full px-4 py-6 sm:py-10 max-w-2xl mx-auto">
         <AnimatePresence mode="wait">
 
           {/* ================================================================ */}
@@ -576,7 +643,7 @@ export default function App() {
               className="w-full text-center max-w-md my-auto"
             >
               <span className="text-xs font-bold tracking-wider uppercase text-[#E889AD] mb-2 block">
-                Question 1 of 15
+                Question 1 of 14
               </span>
 
               <h2 className="text-2xl sm:text-3xl font-serif text-[#5A3D4A] font-bold mb-6">
@@ -634,7 +701,7 @@ export default function App() {
               className="w-full text-center max-w-md my-auto"
             >
               <span className="text-xs font-bold tracking-wider uppercase text-[#E889AD] mb-2 block">
-                Question 2 of 15
+                Question 2 of 14
               </span>
 
               <h2 className="text-2xl sm:text-3xl font-serif text-[#5A3D4A] font-bold mb-2">
@@ -667,10 +734,10 @@ export default function App() {
                       setAnswers({ ...answers, feeling: item.label });
                       setTimeout(() => setCurrentStep('favoriteColor'), 450);
                     }}
-                    className={`p-4 rounded-2xl text-left border flex flex-col justify-between transition-all cursor-pointer ${
+                    className={`p-4 rounded-2xl text-left border flex flex-col justify-between transition-all cursor-pointer relative z-20 ${
                       answers.feeling === item.label
-                        ? 'bg-[#FDE8F1] border-2 border-[#E889AD] text-[#E889AD] shadow-md'
-                        : 'glass-panel border-[#F8C8DC] hover:border-[#E889AD] text-[#5A3D4A]'
+                        ? 'btn-option-selected shadow-md font-bold'
+                        : 'btn-option text-[#2D1B24]'
                     }`}
                   >
                     <span className="text-3xl mb-2">{item.emoji}</span>
@@ -693,7 +760,7 @@ export default function App() {
               className="w-full text-center max-w-md my-auto"
             >
               <span className="text-xs font-bold tracking-wider uppercase text-[#E889AD] mb-2 block">
-                Question 3 of 15
+                Question 3 of 14
               </span>
 
               <h2 className="text-2xl sm:text-3xl font-serif text-[#5A3D4A] font-bold mb-2">
@@ -710,16 +777,16 @@ export default function App() {
                   <button
                     key={c.name}
                     onClick={() => handleSelectAnswer('favoriteColor', c.name, 'favoriteFood')}
-                    className="p-3 rounded-2xl glass-panel hover:bg-white border border-[#F8C8DC] flex items-center gap-3 text-left transition-all cursor-pointer shadow-xs active:scale-95"
+                    className="p-3 rounded-2xl btn-option flex items-center gap-3 text-left transition-all cursor-pointer shadow-xs active:scale-95 relative z-20"
                   >
                     <span className={`w-6 h-6 rounded-full shrink-0 shadow-xs ${c.bg}`} />
-                    <span className="text-xs font-semibold text-[#5A3D4A] line-clamp-1">{c.name}</span>
+                    <span className="text-xs font-bold text-[#2D1B24] line-clamp-1">{c.name}</span>
                   </button>
                 ))}
               </div>
 
               {/* Custom Color Picker */}
-              <div className="p-4 rounded-2xl glass-panel border border-[#F8C8DC] flex items-center justify-between gap-3 shadow-xs">
+              <div className="p-4 rounded-2xl bg-white border-2 border-[#F3A5C2] flex items-center justify-between gap-3 shadow-xs relative z-20">
                 <div className="flex items-center gap-3">
                   <input
                     type="color"
@@ -728,8 +795,8 @@ export default function App() {
                     className="w-10 h-10 rounded-xl cursor-pointer bg-transparent border-0"
                   />
                   <div className="text-left">
-                    <span className="text-xs text-[#5A3D4A] font-bold block">Custom Shade</span>
-                    <span className="text-[10px] text-[#5A3D4A]/60 font-mono">{customColor}</span>
+                    <span className="text-xs text-[#2D1B24] font-bold block">Custom Shade</span>
+                    <span className="text-[10px] text-[#5A3D4A]/70 font-mono font-bold">{customColor}</span>
                   </div>
                 </div>
 
@@ -744,7 +811,7 @@ export default function App() {
           )}
 
           {/* ================================================================ */}
-          {/* 6. FAVORITE FOOD */}
+          {/* 6. FAVORITE FOOD (Multi-Select Pakistani Options) */}
           {/* ================================================================ */}
           {currentStep === 'favoriteFood' && (
             <motion.div
@@ -752,59 +819,116 @@ export default function App() {
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -15 }}
-              className="w-full text-center max-w-md my-auto"
+              className="w-full text-center max-w-lg my-auto"
             >
               <span className="text-xs font-bold tracking-wider uppercase text-[#E889AD] mb-2 block">
-                Question 4 of 15
+                Question 4 of 14 • Multi-Select ❤️
               </span>
 
               <h2 className="text-2xl sm:text-3xl font-serif text-[#5A3D4A] font-bold mb-2">
-                What's your favorite food? 🍽️
+                What foods do you love? ❤️
               </h2>
 
-              <p className="text-xs sm:text-sm text-[#5A3D4A]/70 mb-6">
-                Pick your comfort meal of choice
+              <p className="text-xs sm:text-sm text-[#5A3D4A]/70 mb-5">
+                Pick as many delicious favorites as you want!
               </p>
 
-              <div className="grid grid-cols-2 gap-2.5 mb-4">
-                {FOOD_PRESETS.filter(f => f !== 'Other').map((food) => (
-                  <button
-                    key={food}
-                    onClick={() => handleSelectAnswer('favoriteFood', food.replace(/[^\w\s]/gi, '').trim(), 'favoriteClothes')}
-                    className="p-3.5 rounded-2xl glass-panel hover:bg-white border border-[#F8C8DC] flex items-center gap-2.5 text-left text-sm font-semibold text-[#5A3D4A] transition-all cursor-pointer shadow-xs active:scale-95"
-                  >
-                    <span>{food}</span>
-                  </button>
-                ))}
+              {/* Multi-Select Food Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 mb-5 max-h-[46vh] overflow-y-auto p-1 rounded-2xl">
+                {FOOD_PRESETS.filter(f => f !== '🌮 Other').map((food) => {
+                  const cleanName = food.replace(/^[^\w\s]+\s*/, '').trim() || food.trim();
+                  const isSelected = (answers.favoriteFood || []).includes(cleanName);
+                  return (
+                    <motion.button
+                      key={food}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => handleToggleMultiSelect('favoriteFood', food)}
+                      className={`p-3 rounded-2xl flex items-center justify-between text-left text-xs sm:text-sm font-bold transition-all cursor-pointer relative z-20 ${
+                        isSelected
+                          ? 'btn-option-selected'
+                          : 'btn-option'
+                      }`}
+                    >
+                      <span className="line-clamp-1">{food}</span>
+                      {isSelected ? (
+                        <span className="w-5 h-5 rounded-full bg-white text-[#96123E] flex items-center justify-center shrink-0 ml-1.5 shadow-xs">
+                          <Check className="w-3.5 h-3.5 stroke-[3]" />
+                        </span>
+                      ) : (
+                        <span className="w-4 h-4 rounded-full border-2 border-[#F3A5C2] shrink-0 ml-1.5 opacity-60" />
+                      )}
+                    </motion.button>
+                  );
+                })}
               </div>
 
-              {/* Custom Input for Other */}
-              <div className="flex gap-2">
+              {/* Selected summary chips if any custom or multiple added */}
+              {(answers.favoriteFood || []).length > 0 && (
+                <div className="mb-4 flex flex-wrap items-center justify-center gap-1.5 px-2">
+                  <span className="text-[11px] font-bold text-[#E889AD] uppercase tracking-wider mr-1">
+                    Selected ({(answers.favoriteFood || []).length}):
+                  </span>
+                  {(answers.favoriteFood || []).map((f) => (
+                    <span
+                      key={f}
+                      onClick={() => handleToggleMultiSelect('favoriteFood', f)}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#FDE8F1] border border-[#F8C8DC] text-[#96123E] cursor-pointer hover:bg-rose-100 transition-colors"
+                      title="Click to remove"
+                    >
+                      <span>{f}</span>
+                      <span className="text-xs leading-none">×</span>
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {/* Custom Input for Other Food */}
+              <div className="flex gap-2 mb-4 relative z-20">
                 <input
                   type="text"
-                  placeholder="Or type custom food..."
+                  placeholder="Or type custom food (e.g. Haleem)..."
                   value={customInput}
                   onChange={(e) => setCustomInput(e.target.value)}
-                  className="flex-1 py-3 px-4 rounded-xl glass-input text-xs sm:text-sm text-[#5A3D4A] placeholder-[#5A3D4A]/40 outline-none"
+                  className="flex-1 py-3 px-4 rounded-xl glass-input text-xs sm:text-sm text-[#5A3D4A] placeholder-[#5A3D4A]/50 outline-none"
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter' && customInput.trim()) {
-                      handleSelectAnswer('favoriteFood', customInput.trim(), 'favoriteClothes');
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleAddCustomMultiSelect('favoriteFood');
                     }
                   }}
                 />
                 <button
+                  type="button"
                   disabled={!customInput.trim()}
-                  onClick={() => handleSelectAnswer('favoriteFood', customInput.trim(), 'favoriteClothes')}
-                  className="px-5 py-3 rounded-xl btn-pink-gradient disabled:opacity-50 text-white font-bold text-xs cursor-pointer"
+                  onClick={() => handleAddCustomMultiSelect('favoriteFood')}
+                  className="px-4 py-3 rounded-xl btn-pink-gradient disabled:opacity-50 text-white font-bold text-xs cursor-pointer shrink-0"
                 >
-                  Confirm
+                  Add ➕
                 </button>
               </div>
+
+              {/* Continue Button */}
+              <button
+                disabled={(answers.favoriteFood || []).length === 0}
+                onClick={() => {
+                  sound.playClick();
+                  setCustomInput('');
+                  setCurrentStep('favoriteClothes');
+                }}
+                className="w-full py-4 rounded-2xl font-bold text-base text-white btn-pink-gradient shadow-lg flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed relative z-20"
+              >
+                <span>
+                  {(answers.favoriteFood || []).length > 0
+                    ? `Continue (${(answers.favoriteFood || []).length} Selected) ❤️`
+                    : 'Select at least one food'}
+                </span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
             </motion.div>
           )}
 
           {/* ================================================================ */}
-          {/* 7. FAVORITE CLOTHES */}
+          {/* 7. FAVORITE CLOTHES (Multi-Select Pakistani & Traditional Options) */}
           {/* ================================================================ */}
           {currentStep === 'favoriteClothes' && (
             <motion.div
@@ -812,59 +936,116 @@ export default function App() {
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -15 }}
-              className="w-full text-center max-w-md my-auto"
+              className="w-full text-center max-w-lg my-auto"
             >
               <span className="text-xs font-bold tracking-wider uppercase text-[#E889AD] mb-2 block">
-                Question 5 of 15
+                Question 5 of 14 • Multi-Select 👗
               </span>
 
               <h2 className="text-2xl sm:text-3xl font-serif text-[#5A3D4A] font-bold mb-2">
-                What kind of clothes do you love wearing? 👕
+                What type of clothes do you like? 👗
               </h2>
 
-              <p className="text-xs sm:text-sm text-[#5A3D4A]/70 mb-6">
-                Your signature everyday style
+              <p className="text-xs sm:text-sm text-[#5A3D4A]/70 mb-5">
+                Choose the clothing styles you love wearing!
               </p>
 
-              <div className="grid grid-cols-2 gap-2.5 mb-4">
-                {CLOTHES_PRESETS.filter(c => c !== 'Other').map((style) => (
-                  <button
-                    key={style}
-                    onClick={() => handleSelectAnswer('favoriteClothes', style, 'favoriteMovie')}
-                    className="p-3.5 rounded-2xl glass-panel hover:bg-white border border-[#F8C8DC] text-center text-sm font-semibold text-[#5A3D4A] transition-all cursor-pointer shadow-xs active:scale-95"
-                  >
-                    <span>{style}</span>
-                  </button>
-                ))}
+              {/* Multi-Select Clothes Grid */}
+              <div className="grid grid-cols-2 gap-2.5 mb-5 max-h-[46vh] overflow-y-auto p-1 rounded-2xl">
+                {CLOTHES_PRESETS.filter(c => c !== '👗 Other').map((style) => {
+                  const cleanStyle = style.replace(/^[^\w\s]+\s*/, '').trim() || style.trim();
+                  const isSelected = (answers.favoriteClothes || []).includes(cleanStyle);
+                  return (
+                    <motion.button
+                      key={style}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => handleToggleMultiSelect('favoriteClothes', style)}
+                      className={`p-3.5 rounded-2xl flex items-center justify-between text-left text-xs sm:text-sm font-bold transition-all cursor-pointer relative z-20 ${
+                        isSelected
+                          ? 'btn-option-selected'
+                          : 'btn-option'
+                      }`}
+                    >
+                      <span className="line-clamp-1">{style}</span>
+                      {isSelected ? (
+                        <span className="w-5 h-5 rounded-full bg-white text-[#96123E] flex items-center justify-center shrink-0 ml-1.5 shadow-xs">
+                          <Check className="w-3.5 h-3.5 stroke-[3]" />
+                        </span>
+                      ) : (
+                        <span className="w-4 h-4 rounded-full border-2 border-[#F3A5C2] shrink-0 ml-1.5 opacity-60" />
+                      )}
+                    </motion.button>
+                  );
+                })}
               </div>
 
-              {/* Custom Input */}
-              <div className="flex gap-2">
+              {/* Selected summary chips */}
+              {(answers.favoriteClothes || []).length > 0 && (
+                <div className="mb-4 flex flex-wrap items-center justify-center gap-1.5 px-2">
+                  <span className="text-[11px] font-bold text-[#E889AD] uppercase tracking-wider mr-1">
+                    Selected ({(answers.favoriteClothes || []).length}):
+                  </span>
+                  {(answers.favoriteClothes || []).map((c) => (
+                    <span
+                      key={c}
+                      onClick={() => handleToggleMultiSelect('favoriteClothes', c)}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#FDE8F1] border border-[#F8C8DC] text-[#96123E] cursor-pointer hover:bg-rose-100 transition-colors"
+                      title="Click to remove"
+                    >
+                      <span>{c}</span>
+                      <span className="text-xs leading-none">×</span>
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {/* Custom Input for Other Clothes */}
+              <div className="flex gap-2 mb-4 relative z-20">
                 <input
                   type="text"
                   placeholder="Or custom outfit style..."
                   value={customInput}
                   onChange={(e) => setCustomInput(e.target.value)}
-                  className="flex-1 py-3 px-4 rounded-xl glass-input text-xs sm:text-sm text-[#5A3D4A] placeholder-[#5A3D4A]/40 outline-none"
+                  className="flex-1 py-3 px-4 rounded-xl glass-input text-xs sm:text-sm text-[#5A3D4A] placeholder-[#5A3D4A]/50 outline-none"
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter' && customInput.trim()) {
-                      handleSelectAnswer('favoriteClothes', customInput.trim(), 'favoriteMovie');
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleAddCustomMultiSelect('favoriteClothes');
                     }
                   }}
                 />
                 <button
+                  type="button"
                   disabled={!customInput.trim()}
-                  onClick={() => handleSelectAnswer('favoriteClothes', customInput.trim(), 'favoriteMovie')}
-                  className="px-5 py-3 rounded-xl btn-pink-gradient disabled:opacity-50 text-white font-bold text-xs cursor-pointer"
+                  onClick={() => handleAddCustomMultiSelect('favoriteClothes')}
+                  className="px-4 py-3 rounded-xl btn-pink-gradient disabled:opacity-50 text-white font-bold text-xs cursor-pointer shrink-0"
                 >
-                  Confirm
+                  Add ➕
                 </button>
               </div>
+
+              {/* Continue Button */}
+              <button
+                disabled={(answers.favoriteClothes || []).length === 0}
+                onClick={() => {
+                  sound.playClick();
+                  setCustomInput('');
+                  setCurrentStep('favoriteMovie');
+                }}
+                className="w-full py-4 rounded-2xl font-bold text-base text-white btn-pink-gradient shadow-lg flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed relative z-20"
+              >
+                <span>
+                  {(answers.favoriteClothes || []).length > 0
+                    ? `Continue (${(answers.favoriteClothes || []).length} Selected) ❤️`
+                    : 'Select at least one style'}
+                </span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
             </motion.div>
           )}
 
           {/* ================================================================ */}
-          {/* 8. PERSONAL QUESTIONS (9 questions asked one by one) */}
+          {/* 8. PERSONAL QUESTIONS (Asked one by one) */}
           {/* ================================================================ */}
 
           {/* Q1: Favorite Movie */}
@@ -877,7 +1058,7 @@ export default function App() {
               className="w-full text-center max-w-md my-auto"
             >
               <span className="text-xs font-bold tracking-wider uppercase text-[#E889AD] mb-2 block">
-                Question 6 of 15
+                Question 6 of 14
               </span>
 
               <h2 className="text-2xl sm:text-3xl font-serif text-[#5A3D4A] font-bold mb-2">
@@ -892,30 +1073,30 @@ export default function App() {
                 {MOVIE_PRESETS.filter(m => m !== 'Other').map((m) => (
                   <button
                     key={m}
-                    onClick={() => handleSelectAnswer('favoriteMovie', m, 'favoriteSong')}
-                    className="p-3 rounded-2xl glass-panel hover:bg-white border border-[#F8C8DC] text-center text-xs sm:text-sm font-semibold text-[#5A3D4A] transition-all cursor-pointer shadow-xs active:scale-95"
+                    onClick={() => handleSelectAnswer('favoriteMovie', m, 'favoriteSubjects')}
+                    className="p-3 rounded-2xl btn-option text-center text-xs sm:text-sm font-bold text-[#2D1B24] transition-all cursor-pointer shadow-xs active:scale-95 relative z-20"
                   >
                     <span>{m}</span>
                   </button>
                 ))}
               </div>
 
-              <div className="flex gap-2">
+              <div className="flex gap-2 relative z-20">
                 <input
                   type="text"
                   placeholder="Or type any movie title..."
                   value={customInput}
                   onChange={(e) => setCustomInput(e.target.value)}
-                  className="flex-1 py-3 px-4 rounded-xl glass-input text-xs sm:text-sm text-[#5A3D4A] placeholder-[#5A3D4A]/40 outline-none"
+                  className="flex-1 py-3 px-4 rounded-xl glass-input text-xs sm:text-sm text-[#5A3D4A] placeholder-[#5A3D4A]/50 outline-none"
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && customInput.trim()) {
-                      handleSelectAnswer('favoriteMovie', customInput.trim(), 'favoriteSong');
+                      handleSelectAnswer('favoriteMovie', customInput.trim(), 'favoriteSubjects');
                     }
                   }}
                 />
                 <button
                   disabled={!customInput.trim()}
-                  onClick={() => handleSelectAnswer('favoriteMovie', customInput.trim(), 'favoriteSong')}
+                  onClick={() => handleSelectAnswer('favoriteMovie', customInput.trim(), 'favoriteSubjects')}
                   className="px-5 py-3 rounded-xl btn-pink-gradient disabled:opacity-50 text-white font-bold text-xs cursor-pointer"
                 >
                   Confirm
@@ -924,60 +1105,118 @@ export default function App() {
             </motion.div>
           )}
 
-          {/* Q2: Favorite Song */}
-          {currentStep === 'favoriteSong' && (
+          {/* Q2: Favorite Subjects (Multi-Select, Replaces Favorite Song) */}
+          {currentStep === 'favoriteSubjects' && (
             <motion.div
-              key="step-song"
+              key="step-subjects"
               initial={{ opacity: 0, y: 15 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -15 }}
-              className="w-full text-center max-w-md my-auto"
+              className="w-full text-center max-w-lg my-auto"
             >
               <span className="text-xs font-bold tracking-wider uppercase text-[#E889AD] mb-2 block">
-                Question 7 of 15
+                Question 7 of 14 • Multi-Select 📚
               </span>
 
               <h2 className="text-2xl sm:text-3xl font-serif text-[#5A3D4A] font-bold mb-2">
-                What's your favorite song? 🎵
+                What are your favorite subjects? 📚❤️
               </h2>
 
-              <p className="text-xs sm:text-sm text-[#5A3D4A]/70 mb-6">
-                Your ultimate anthem on repeat
+              <p className="text-xs sm:text-sm text-[#5A3D4A]/70 mb-5">
+                Select multiple subjects you enjoy or excelled at!
               </p>
 
-              <div className="grid grid-cols-2 gap-2.5 mb-4">
-                {SONG_PRESETS.filter(s => s !== 'Other').map((s) => (
-                  <button
-                    key={s}
-                    onClick={() => handleSelectAnswer('favoriteSong', s, 'favoriteSport')}
-                    className="p-3 rounded-2xl glass-panel hover:bg-white border border-[#F8C8DC] text-center text-xs sm:text-sm font-semibold text-[#5A3D4A] transition-all cursor-pointer shadow-xs active:scale-95"
-                  >
-                    <span>{s}</span>
-                  </button>
-                ))}
+              {/* Multi-Select Subjects Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 mb-5 max-h-[46vh] overflow-y-auto p-1 rounded-2xl">
+                {SUBJECT_PRESETS.filter(s => s !== '📝 Other').map((sub) => {
+                  const cleanSub = sub.replace(/^[^\w\s]+\s*/, '').trim() || sub.trim();
+                  const isSelected = (answers.favoriteSubjects || []).includes(cleanSub);
+                  return (
+                    <motion.button
+                      key={sub}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => handleToggleMultiSelect('favoriteSubjects', sub)}
+                      className={`p-3 rounded-2xl flex items-center justify-between text-left text-xs sm:text-sm font-bold transition-all cursor-pointer relative z-20 ${
+                        isSelected
+                          ? 'btn-option-selected'
+                          : 'btn-option'
+                      }`}
+                    >
+                      <span className="line-clamp-1">{sub}</span>
+                      {isSelected ? (
+                        <span className="w-5 h-5 rounded-full bg-white text-[#96123E] flex items-center justify-center shrink-0 ml-1.5 shadow-xs">
+                          <Check className="w-3.5 h-3.5 stroke-[3]" />
+                        </span>
+                      ) : (
+                        <span className="w-4 h-4 rounded-full border-2 border-[#F3A5C2] shrink-0 ml-1.5 opacity-60" />
+                      )}
+                    </motion.button>
+                  );
+                })}
               </div>
 
-              <div className="flex gap-2">
+              {/* Selected summary chips */}
+              {(answers.favoriteSubjects || []).length > 0 && (
+                <div className="mb-4 flex flex-wrap items-center justify-center gap-1.5 px-2">
+                  <span className="text-[11px] font-bold text-[#E889AD] uppercase tracking-wider mr-1">
+                    Selected ({(answers.favoriteSubjects || []).length}):
+                  </span>
+                  {(answers.favoriteSubjects || []).map((s) => (
+                    <span
+                      key={s}
+                      onClick={() => handleToggleMultiSelect('favoriteSubjects', s)}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#FDE8F1] border border-[#F8C8DC] text-[#96123E] cursor-pointer hover:bg-rose-100 transition-colors"
+                      title="Click to remove"
+                    >
+                      <span>{s}</span>
+                      <span className="text-xs leading-none">×</span>
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {/* Custom Input for Other Subject */}
+              <div className="flex gap-2 mb-4 relative z-20">
                 <input
                   type="text"
-                  placeholder="Or type your favorite track..."
+                  placeholder="Or type custom subject..."
                   value={customInput}
                   onChange={(e) => setCustomInput(e.target.value)}
-                  className="flex-1 py-3 px-4 rounded-xl glass-input text-xs sm:text-sm text-[#5A3D4A] placeholder-[#5A3D4A]/40 outline-none"
+                  className="flex-1 py-3 px-4 rounded-xl glass-input text-xs sm:text-sm text-[#5A3D4A] placeholder-[#5A3D4A]/50 outline-none"
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter' && customInput.trim()) {
-                      handleSelectAnswer('favoriteSong', customInput.trim(), 'favoriteSport');
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleAddCustomMultiSelect('favoriteSubjects');
                     }
                   }}
                 />
                 <button
+                  type="button"
                   disabled={!customInput.trim()}
-                  onClick={() => handleSelectAnswer('favoriteSong', customInput.trim(), 'favoriteSport')}
-                  className="px-5 py-3 rounded-xl btn-pink-gradient disabled:opacity-50 text-white font-bold text-xs cursor-pointer"
+                  onClick={() => handleAddCustomMultiSelect('favoriteSubjects')}
+                  className="px-4 py-3 rounded-xl btn-pink-gradient disabled:opacity-50 text-white font-bold text-xs cursor-pointer shrink-0"
                 >
-                  Confirm
+                  Add ➕
                 </button>
               </div>
+
+              {/* Continue Button */}
+              <button
+                disabled={(answers.favoriteSubjects || []).length === 0}
+                onClick={() => {
+                  sound.playClick();
+                  setCustomInput('');
+                  setCurrentStep('favoriteSport');
+                }}
+                className="w-full py-4 rounded-2xl font-bold text-base text-white btn-pink-gradient shadow-lg flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed relative z-20"
+              >
+                <span>
+                  {(answers.favoriteSubjects || []).length > 0
+                    ? `Continue (${(answers.favoriteSubjects || []).length} Selected) ❤️`
+                    : 'Select at least one subject'}
+                </span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
             </motion.div>
           )}
 
@@ -991,7 +1230,7 @@ export default function App() {
               className="w-full text-center max-w-md my-auto"
             >
               <span className="text-xs font-bold tracking-wider uppercase text-[#E889AD] mb-2 block">
-                Question 8 of 15
+                Question 8 of 14
               </span>
 
               <h2 className="text-2xl sm:text-3xl font-serif text-[#5A3D4A] font-bold mb-2">
@@ -1007,20 +1246,20 @@ export default function App() {
                   <button
                     key={sport}
                     onClick={() => handleSelectAnswer('favoriteSport', sport.replace(/[^\w\s/]/gi, '').trim(), 'favoritePlace')}
-                    className="p-3.5 rounded-2xl glass-panel hover:bg-white border border-[#F8C8DC] text-center text-xs sm:text-sm font-semibold text-[#5A3D4A] transition-all cursor-pointer shadow-xs active:scale-95"
+                    className="p-3.5 rounded-2xl btn-option text-center text-xs sm:text-sm font-bold text-[#2D1B24] transition-all cursor-pointer shadow-xs active:scale-95 relative z-20"
                   >
                     <span>{sport}</span>
                   </button>
                 ))}
               </div>
 
-              <div className="flex gap-2">
+              <div className="flex gap-2 relative z-20">
                 <input
                   type="text"
                   placeholder="Or type another sport..."
                   value={customInput}
                   onChange={(e) => setCustomInput(e.target.value)}
-                  className="flex-1 py-3 px-4 rounded-xl glass-input text-xs sm:text-sm text-[#5A3D4A] placeholder-[#5A3D4A]/40 outline-none"
+                  className="flex-1 py-3 px-4 rounded-xl glass-input text-xs sm:text-sm text-[#5A3D4A] placeholder-[#5A3D4A]/50 outline-none"
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && customInput.trim()) {
                       handleSelectAnswer('favoriteSport', customInput.trim(), 'favoritePlace');
@@ -1048,7 +1287,7 @@ export default function App() {
               className="w-full text-center max-w-md my-auto"
             >
               <span className="text-xs font-bold tracking-wider uppercase text-[#E889AD] mb-2 block">
-                Question 9 of 15
+                Question 9 of 14
               </span>
 
               <h2 className="text-2xl sm:text-3xl font-serif text-[#5A3D4A] font-bold mb-2">
@@ -1064,20 +1303,20 @@ export default function App() {
                   <button
                     key={p}
                     onClick={() => handleSelectAnswer('favoritePlace', p.replace(/[^\w\s]/gi, '').trim(), 'drink')}
-                    className="w-full p-3.5 rounded-2xl glass-panel hover:bg-white border border-[#F8C8DC] text-left text-xs sm:text-sm font-semibold text-[#5A3D4A] transition-all cursor-pointer shadow-xs active:scale-98"
+                    className="w-full p-3.5 rounded-2xl btn-option text-left text-xs sm:text-sm font-bold text-[#2D1B24] transition-all cursor-pointer shadow-xs active:scale-98 relative z-20"
                   >
                     <span>{p}</span>
                   </button>
                 ))}
               </div>
 
-              <div className="flex gap-2">
+              <div className="flex gap-2 relative z-20">
                 <input
                   type="text"
                   placeholder="Or describe your sanctuary..."
                   value={customInput}
                   onChange={(e) => setCustomInput(e.target.value)}
-                  className="flex-1 py-3 px-4 rounded-xl glass-input text-xs sm:text-sm text-[#5A3D4A] placeholder-[#5A3D4A]/40 outline-none"
+                  className="flex-1 py-3 px-4 rounded-xl glass-input text-xs sm:text-sm text-[#5A3D4A] placeholder-[#5A3D4A]/50 outline-none"
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && customInput.trim()) {
                       handleSelectAnswer('favoritePlace', customInput.trim(), 'drink');
@@ -1105,7 +1344,7 @@ export default function App() {
               className="w-full text-center max-w-md my-auto"
             >
               <span className="text-xs font-bold tracking-wider uppercase text-[#E889AD] mb-2 block">
-                Question 10 of 15
+                Question 10 of 14
               </span>
 
               <h2 className="text-2xl sm:text-3xl font-serif text-[#5A3D4A] font-bold mb-2">
@@ -1126,11 +1365,11 @@ export default function App() {
                   <button
                     key={item.label}
                     onClick={() => handleSelectAnswer('drink', item.label, 'timePreference')}
-                    className="p-5 rounded-2xl glass-panel hover:bg-white border border-[#F8C8DC] text-center transition-all cursor-pointer shadow-xs active:scale-95"
+                    className="p-5 rounded-2xl btn-option text-center transition-all cursor-pointer shadow-xs active:scale-95 relative z-20"
                   >
                     <span className="text-3xl block mb-2">{item.icon}</span>
-                    <span className="font-bold text-sm text-[#5A3D4A] block">{item.label}</span>
-                    <span className="text-[11px] text-[#5A3D4A]/60 mt-0.5 block">{item.desc}</span>
+                    <span className="font-bold text-sm text-[#2D1B24] block">{item.label}</span>
+                    <span className="text-[11px] text-[#5A3D4A]/70 mt-0.5 block font-medium">{item.desc}</span>
                   </button>
                 ))}
               </div>
@@ -1147,7 +1386,7 @@ export default function App() {
               className="w-full text-center max-w-md my-auto"
             >
               <span className="text-xs font-bold tracking-wider uppercase text-[#E889AD] mb-2 block">
-                Question 11 of 15
+                Question 11 of 14
               </span>
 
               <h2 className="text-2xl sm:text-3xl font-serif text-[#5A3D4A] font-bold mb-2">
@@ -1161,20 +1400,20 @@ export default function App() {
               <div className="grid grid-cols-2 gap-3">
                 <button
                   onClick={() => handleSelectAnswer('timePreference', 'Morning', 'tastePreference')}
-                  className="p-6 rounded-3xl glass-panel hover:bg-white border-2 border-[#F8C8DC] text-center transition-all cursor-pointer shadow-xs active:scale-95"
+                  className="p-6 rounded-3xl btn-option text-center transition-all cursor-pointer shadow-xs active:scale-95 relative z-20"
                 >
                   <span className="text-4xl block mb-3">🌅</span>
                   <span className="font-bold text-base text-[#D9A441] block">Morning</span>
-                  <span className="text-xs text-[#5A3D4A]/70 mt-1 block font-medium">Early riser & sunrise lover</span>
+                  <span className="text-xs text-[#5A3D4A]/80 mt-1 block font-medium">Early riser & sunrise lover</span>
                 </button>
 
                 <button
                   onClick={() => handleSelectAnswer('timePreference', 'Night', 'tastePreference')}
-                  className="p-6 rounded-3xl glass-panel hover:bg-white border-2 border-[#F8C8DC] text-center transition-all cursor-pointer shadow-xs active:scale-95"
+                  className="p-6 rounded-3xl btn-option text-center transition-all cursor-pointer shadow-xs active:scale-95 relative z-20"
                 >
                   <span className="text-4xl block mb-3">🌙</span>
-                  <span className="font-bold text-base text-[#E889AD] block">Night</span>
-                  <span className="text-xs text-[#5A3D4A]/70 mt-1 block font-medium">Night owl & midnight dreamer</span>
+                  <span className="font-bold text-base text-[#96123E] block">Night</span>
+                  <span className="text-xs text-[#5A3D4A]/80 mt-1 block font-medium">Night owl & midnight dreamer</span>
                 </button>
               </div>
             </motion.div>
@@ -1190,7 +1429,7 @@ export default function App() {
               className="w-full text-center max-w-md my-auto"
             >
               <span className="text-xs font-bold tracking-wider uppercase text-[#E889AD] mb-2 block">
-                Question 12 of 15
+                Question 12 of 14
               </span>
 
               <h2 className="text-2xl sm:text-3xl font-serif text-[#5A3D4A] font-bold mb-2">
@@ -1204,23 +1443,23 @@ export default function App() {
               <div className="grid grid-cols-3 gap-2.5">
                 <button
                   onClick={() => handleSelectAnswer('tastePreference', 'Sweet', 'favoriteHobby')}
-                  className="p-5 rounded-2xl glass-panel hover:bg-white border border-[#F8C8DC] text-center transition-all cursor-pointer shadow-xs active:scale-95"
+                  className="p-5 rounded-2xl btn-option text-center transition-all cursor-pointer shadow-xs active:scale-95 relative z-20"
                 >
                   <span className="text-3xl block mb-2">🍫</span>
-                  <span className="font-bold text-xs sm:text-sm text-[#E889AD] block">Sweet Tooth</span>
+                  <span className="font-bold text-xs sm:text-sm text-[#96123E] block">Sweet Tooth</span>
                 </button>
 
                 <button
                   onClick={() => handleSelectAnswer('tastePreference', 'Spicy', 'favoriteHobby')}
-                  className="p-5 rounded-2xl glass-panel hover:bg-white border border-[#F8C8DC] text-center transition-all cursor-pointer shadow-xs active:scale-95"
+                  className="p-5 rounded-2xl btn-option text-center transition-all cursor-pointer shadow-xs active:scale-95 relative z-20"
                 >
                   <span className="text-3xl block mb-2">🌶️</span>
-                  <span className="font-bold text-xs sm:text-sm text-rose-500 block">Spicy Lover</span>
+                  <span className="font-bold text-xs sm:text-sm text-rose-600 block">Spicy Lover</span>
                 </button>
 
                 <button
                   onClick={() => handleSelectAnswer('tastePreference', 'Both', 'favoriteHobby')}
-                  className="p-5 rounded-2xl glass-panel hover:bg-white border border-[#F8C8DC] text-center transition-all cursor-pointer shadow-xs active:scale-95"
+                  className="p-5 rounded-2xl btn-option text-center transition-all cursor-pointer shadow-xs active:scale-95 relative z-20"
                 >
                   <span className="text-3xl block mb-2">😋</span>
                   <span className="font-bold text-xs sm:text-sm text-[#D9A441] block">Both!</span>
@@ -1239,7 +1478,7 @@ export default function App() {
               className="w-full text-center max-w-md my-auto"
             >
               <span className="text-xs font-bold tracking-wider uppercase text-[#E889AD] mb-2 block">
-                Question 13 of 15
+                Question 13 of 14
               </span>
 
               <h2 className="text-2xl sm:text-3xl font-serif text-[#5A3D4A] font-bold mb-2">
@@ -1255,20 +1494,20 @@ export default function App() {
                   <button
                     key={hobby}
                     onClick={() => handleSelectAnswer('favoriteHobby', hobby.replace(/[^\w\s&]/gi, '').trim(), 'dreamDestination')}
-                    className="p-3.5 rounded-2xl glass-panel hover:bg-white border border-[#F8C8DC] text-center text-xs sm:text-sm font-semibold text-[#5A3D4A] transition-all cursor-pointer shadow-xs active:scale-95"
+                    className="p-3.5 rounded-2xl btn-option text-center text-xs sm:text-sm font-bold text-[#2D1B24] transition-all cursor-pointer shadow-xs active:scale-95 relative z-20"
                   >
                     <span>{hobby}</span>
                   </button>
                 ))}
               </div>
 
-              <div className="flex gap-2">
+              <div className="flex gap-2 relative z-20">
                 <input
                   type="text"
                   placeholder="Or custom hobby..."
                   value={customInput}
                   onChange={(e) => setCustomInput(e.target.value)}
-                  className="flex-1 py-3 px-4 rounded-xl glass-input text-xs sm:text-sm text-[#5A3D4A] placeholder-[#5A3D4A]/40 outline-none"
+                  className="flex-1 py-3 px-4 rounded-xl glass-input text-xs sm:text-sm text-[#5A3D4A] placeholder-[#5A3D4A]/50 outline-none"
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && customInput.trim()) {
                       handleSelectAnswer('favoriteHobby', customInput.trim(), 'dreamDestination');
@@ -1296,7 +1535,7 @@ export default function App() {
               className="w-full text-center max-w-md my-auto"
             >
               <span className="text-xs font-bold tracking-wider uppercase text-[#E889AD] mb-2 block">
-                Question 14 of 15
+                Question 14 of 14
               </span>
 
               <h2 className="text-2xl sm:text-3xl font-serif text-[#5A3D4A] font-bold mb-2">
@@ -1312,20 +1551,20 @@ export default function App() {
                   <button
                     key={dest}
                     onClick={() => handleSelectAnswer('dreamDestination', dest.replace(/[^\w\s()&]/gi, '').trim(), 'final_match')}
-                    className="w-full p-3.5 rounded-2xl glass-panel hover:bg-white border border-[#F8C8DC] text-left text-xs sm:text-sm font-semibold text-[#5A3D4A] transition-all cursor-pointer shadow-xs active:scale-98"
+                    className="w-full p-3.5 rounded-2xl btn-option text-left text-xs sm:text-sm font-bold text-[#2D1B24] transition-all cursor-pointer shadow-xs active:scale-98 relative z-20"
                   >
                     <span>{dest}</span>
                   </button>
                 ))}
               </div>
 
-              <div className="flex gap-2">
+              <div className="flex gap-2 relative z-20">
                 <input
                   type="text"
                   placeholder="Or your dream country..."
                   value={customInput}
                   onChange={(e) => setCustomInput(e.target.value)}
-                  className="flex-1 py-3 px-4 rounded-xl glass-input text-xs sm:text-sm text-[#5A3D4A] placeholder-[#5A3D4A]/40 outline-none"
+                  className="flex-1 py-3 px-4 rounded-xl glass-input text-xs sm:text-sm text-[#5A3D4A] placeholder-[#5A3D4A]/50 outline-none"
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && customInput.trim()) {
                       handleSelectAnswer('dreamDestination', customInput.trim(), 'final_match');
@@ -1609,9 +1848,9 @@ export default function App() {
                 {/* Restart Experience */}
                 <button
                   onClick={handleRestart}
-                  className="w-full py-3.5 px-6 rounded-2xl font-semibold text-sm text-[#5A3D4A] bg-white hover:bg-[#FDE8F1] transition-all flex items-center justify-center gap-2 cursor-pointer border border-[#F8C8DC] shadow-xs"
+                  className="w-full py-3.5 px-6 rounded-2xl font-bold text-sm text-[#5A3D4A] bg-white hover:bg-[#FDE8F1] transition-all flex items-center justify-center gap-2 cursor-pointer border-2 border-[#E889AD] hover:border-[#DE5180] shadow-xs relative z-20"
                 >
-                  <RotateCcw className="w-4 h-4 text-[#E889AD]" />
+                  <RotateCcw className="w-4 h-4 text-[#DE5180]" />
                   <span>Experience Again ↻</span>
                 </button>
               </div>
@@ -1622,11 +1861,23 @@ export default function App() {
       </main>
 
       {/* FOOTER & CREATOR HELPER */}
-      <footer className="w-full py-4 px-4 border-t border-[#F8C8DC]/60 text-center text-xs text-[#5A3D4A]/70 flex flex-col sm:flex-row items-center justify-between gap-2 max-w-4xl mx-auto">
+      <footer className="relative z-10 w-full py-4 px-4 border-t border-[#F8C8DC]/60 text-center text-xs text-[#5A3D4A]/70 flex flex-col sm:flex-row items-center justify-between gap-2 max-w-4xl mx-auto">
         <div className="flex items-center gap-2">
           <Heart className="w-3.5 h-3.5 fill-[#E889AD] text-[#E889AD]" />
           <span>Made with love for WhatsApp surprise delivery</span>
         </div>
+
+        {/* Creator Guide button for configuring Google Sheets */}
+        <button
+          onClick={() => {
+            sound.playClick();
+            setIsGuideModalOpen(true);
+          }}
+          className="text-[11px] text-[#5A3D4A]/60 hover:text-[#E889AD] underline inline-flex items-center gap-1 transition-colors cursor-pointer"
+        >
+          <HelpCircle className="w-3 h-3" />
+          <span>Google Apps Script Setup</span>
+        </button>
       </footer>
 
       {/* WhatsApp Status Generator Modal (1080x1920 9:16 Canvas) */}
@@ -1637,6 +1888,12 @@ export default function App() {
         senderName={MY_NAME}
         similarityScore={matchDetails.percentage}
         matchingCategories={matchDetails.breakdown.filter(b => b.isMatch)}
+      />
+
+      {/* Creator Setup Guide Modal */}
+      <CreatorGuideModal
+        isOpen={isGuideModalOpen}
+        onClose={() => setIsGuideModalOpen(false)}
       />
     </div>
   );

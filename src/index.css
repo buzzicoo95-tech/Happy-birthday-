@@ -22,55 +22,91 @@
 
 /* Premium Soft Pink + White Glassmorphism */
 .glass-panel {
-  background: rgba(255, 255, 255, 0.88);
+  position: relative;
+  z-index: 10;
+  background: rgba(255, 255, 255, 0.94);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(248, 200, 220, 0.7);
+  border: 1.5px solid rgba(248, 200, 220, 0.85);
   box-shadow: 0 12px 35px -8px rgba(232, 137, 173, 0.16), 0 4px 14px rgba(248, 200, 220, 0.2);
 }
 
 .glass-panel-subtle {
-  background: rgba(253, 232, 241, 0.65);
+  position: relative;
+  z-index: 10;
+  background: rgba(253, 232, 241, 0.75);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(248, 200, 220, 0.5);
+  border: 1px solid rgba(248, 200, 220, 0.7);
 }
 
 .glass-panel-gold {
-  background: rgba(255, 255, 255, 0.92);
+  position: relative;
+  z-index: 10;
+  background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1.5px solid rgba(217, 164, 65, 0.35);
+  border: 1.5px solid rgba(217, 164, 65, 0.45);
   box-shadow: 0 12px 35px -8px rgba(217, 164, 65, 0.18), 0 4px 16px rgba(248, 200, 220, 0.25);
 }
 
 .glass-input {
-  background: rgba(255, 255, 255, 0.85);
-  border: 1.5px solid rgba(248, 200, 220, 0.8);
+  background: rgba(255, 255, 255, 0.92);
+  border: 1.5px solid rgba(248, 200, 220, 0.9);
   color: #5A3D4A;
 }
 
 .glass-input:focus {
-  border-color: #E889AD;
+  border-color: #DE5180;
   background: #FFFFFF;
-  box-shadow: 0 0 20px rgba(232, 137, 173, 0.25);
+  box-shadow: 0 0 20px rgba(222, 81, 128, 0.25);
 }
 
-/* Premium Pink Gradient Button */
+/* Premium Pink Gradient Button - Darker, Richer & High-Contrast */
 .btn-pink-gradient {
-  background: linear-gradient(135deg, #F7A8C4, #E889AD);
+  position: relative;
+  z-index: 30;
+  isolation: isolate;
+  background: linear-gradient(135deg, #CF245F, #96123E);
   color: #FFFFFF;
-  box-shadow: 0 8px 24px -4px rgba(232, 137, 173, 0.45);
+  box-shadow: 0 8px 24px -4px rgba(150, 18, 62, 0.5);
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .btn-pink-gradient:hover {
-  background: linear-gradient(135deg, #f9b6cd, #ee96b7);
-  box-shadow: 0 10px 28px -2px rgba(232, 137, 173, 0.55);
+  background: linear-gradient(135deg, #DF2F6E, #A61646);
+  box-shadow: 0 10px 28px -2px rgba(150, 18, 62, 0.65);
 }
 
 .btn-pink-gradient:active {
   transform: scale(0.97);
+}
+
+/* Questionnaire Option Buttons - Solid background, Darker & Clear Contrast */
+.btn-option {
+  position: relative;
+  z-index: 20;
+  background-color: #FFFFFF;
+  border: 1.5px solid #F3A5C2;
+  color: #2D1B24;
+  box-shadow: 0 2px 8px rgba(232, 137, 173, 0.12);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-option:hover {
+  background-color: #FFF5F9;
+  border-color: #CF245F;
+  color: #171717;
+  transform: translateY(-1px);
+}
+
+.btn-option-selected {
+  position: relative;
+  z-index: 25;
+  background: linear-gradient(135deg, #CF245F, #96123E) !important;
+  border: 1.5px solid #820F35 !important;
+  color: #FFFFFF !important;
+  box-shadow: 0 6px 20px rgba(150, 18, 62, 0.45) !important;
 }
 
 /* Custom glow and float animations */

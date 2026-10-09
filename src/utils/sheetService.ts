@@ -11,7 +11,7 @@ export interface SubmissionPayload {
   favoriteFood: string;
   favoriteClothes: string;
   favoriteMovie: string;
-  favoriteSong: string;
+  favoriteSubjects: string;
   favoriteSport: string;
   favoritePlace: string;
   drink: string;
@@ -64,10 +64,10 @@ export async function saveBirthdayResponse(
     feeling: answers.feeling || "",
 
     favoriteColor: answers.favoriteColor || "",
-    favoriteFood: answers.favoriteFood || "",
-    favoriteClothes: answers.favoriteClothes || "",
+    favoriteFood: Array.isArray(answers.favoriteFood) ? answers.favoriteFood.join(', ') : (answers.favoriteFood || ""),
+    favoriteClothes: Array.isArray(answers.favoriteClothes) ? answers.favoriteClothes.join(', ') : (answers.favoriteClothes || ""),
     favoriteMovie: answers.favoriteMovie || "",
-    favoriteSong: answers.favoriteSong || "",
+    favoriteSubjects: Array.isArray(answers.favoriteSubjects) ? answers.favoriteSubjects.join(', ') : (answers.favoriteSubjects || ""),
     favoriteSport: answers.favoriteSport || "",
     favoritePlace: answers.favoritePlace || "",
 

@@ -105,7 +105,20 @@ export const MeVsYou: React.FC<MeVsYouProps> = ({
                   FARHAN
                 </span>
                 <span className="font-semibold text-[#171717] line-clamp-2">
-                  {item.myAnswer ? item.myAnswer : <span className="text-[#5A3D4A]/50 italic text-[11px]">(To be revealed later ✨)</span>}
+                  {(() => {
+                    if (Array.isArray(item.myAnswer)) {
+                      return item.myAnswer.length > 0 ? (
+                        item.myAnswer.join(', ')
+                      ) : (
+                        <span className="text-[#5A3D4A]/50 italic text-[11px]">(To be revealed later ✨)</span>
+                      );
+                    }
+                    return item.myAnswer ? (
+                      item.myAnswer
+                    ) : (
+                      <span className="text-[#5A3D4A]/50 italic text-[11px]">(To be revealed later ✨)</span>
+                    );
+                  })()}
                 </span>
               </div>
 
@@ -114,7 +127,9 @@ export const MeVsYou: React.FC<MeVsYouProps> = ({
                 <span className="text-[10px] text-[#E889AD] font-bold mb-0.5 uppercase tracking-wide">
                   {recipientName}
                 </span>
-                <span className="font-semibold text-[#171717] line-clamp-2">{item.userAnswer}</span>
+                <span className="font-semibold text-[#171717] line-clamp-2">
+                  {Array.isArray(item.userAnswer) ? item.userAnswer.join(', ') : item.userAnswer}
+                </span>
               </div>
             </div>
 

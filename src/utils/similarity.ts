@@ -17,11 +17,46 @@ function clean(str?: string): string {
  */
 export function evaluateCategoryMatch(
   category: keyof MyPreferences,
-  userVal: string,
-  myVal: string
+  userVal: string | string[],
+  myVal: string | string[]
 ): { score: number; isMatch: boolean; note?: string } {
-  const u = clean(userVal);
-  const m = clean(myVal);
+  // Handle multi-select array comparison (food, clothes, subjects)
+  if (Array.isArray(userVal) || Array.isArray(myVal)) {
+    const uArr = (Array.isArray(userVal) ? userVal : [userVal]).map(clean).filter(Boolean);
+    const mArr = (Array.isArray(myVal) ? myVal : [myVal]).map(clean).filter(Boolean);
+
+    if (uArr.length === 0 || mArr.length === 0) {
+      return { score: 0, isMatch: false };
+    }
+
+    // Find shared items (exact or substring match)
+    const shared = uArr.filter(u =>
+      mArr.some(m => u === m || u.includes(m) || m.includes(u))
+    );
+
+    if (shared.length > 0) {
+      const matchRatio = shared.length / Math.max(1, Math.min(uArr.length, mArr.length));
+      const score = Math.min(1.0, Math.max(0.5, matchRatio));
+      const label =
+        category === 'favoriteFood'
+          ? 'foods'
+          : category === 'favoriteClothes'
+          ? 'styles'
+          : category === 'favoriteSubjects'
+          ? 'subjects'
+          : 'items';
+      return {
+        score,
+        isMatch: true,
+        note: `${shared.length} shared ${label}! 💕`
+      };
+    }
+
+    return { score: 0, isMatch: false };
+  }
+
+  const u = clean(userVal as string);
+  const m = clean(myVal as string);
 
   if (!u || !m) {
     return { score: 0, isMatch: false };
@@ -108,7 +143,7 @@ export function evaluateCategoryMatch(
     }
   }
 
-  // Word token overlap for free-text answers (movies, songs, sports, places, hobbies, destinations)
+  // Word token overlap for free-text answers (movies, sports, places, hobbies, destinations)
   const uWords = u.split(/\s+/).filter(w => w.length > 3);
   const mWords = m.split(/\s+/).filter(w => w.length > 3);
   const shared = uWords.filter(w => mWords.includes(w));
@@ -124,17 +159,17 @@ export const CATEGORY_METADATA: Record<
   { label: string; icon: string }
 > = {
   favoriteColor: { label: 'Favorite Color', icon: '🎨' },
-  favoriteFood: { label: 'Favorite Food', icon: '🍽️' },
-  favoriteClothes: { label: 'Favorite Clothes', icon: '👕' },
+  favoriteFood: { label: 'Favorite Foods', icon: '🍲' },
+  favoriteClothes: { label: 'Favorite Clothes', icon: '👗' },
   favoriteMovie: { label: 'Favorite Movie', icon: '🎬' },
-  favoriteSong: { label: 'Favorite Song', icon: '🎵' },
-  favoriteSport: { label: 'Favorite Sport', icon: '🏏' },
-  favoritePlace: { label: 'Favorite Place', icon: '📍' },
+  favoriteSubjects: { label: 'Favorite Subjects', icon: '📚' },
+  favoriteSport: { label: 'Favorite Sport', icon: '⚽' },
+  favoritePlace: { label: 'Favorite Place', icon: '🏔️' },
   drink: { label: 'Tea or Coffee', icon: '☕' },
   timePreference: { label: 'Morning or Night', icon: '🌅' },
   tastePreference: { label: 'Sweet or Spicy', icon: '🍫' },
   favoriteHobby: { label: 'Favorite Hobby', icon: '🎯' },
-  dreamDestination: { label: 'Dream Destination', icon: '✈️' }
+  dreamDestination: { label: 'Dream Destination', icon: '🕋' }
 };
 
 export const CATEGORY_KEYS: (keyof MyPreferences)[] = [
@@ -142,7 +177,7 @@ export const CATEGORY_KEYS: (keyof MyPreferences)[] = [
   'favoriteFood',
   'favoriteClothes',
   'favoriteMovie',
-  'favoriteSong',
+  'favoriteSubjects',
   'favoriteSport',
   'favoritePlace',
   'drink',
@@ -167,16 +202,20 @@ export function calculateMatchDetails(
     const userAns = userAnswers[key];
     const myAns = myPreferences[key];
 
-    if (userAns !== undefined && userAns !== '') {
+    const hasUserAns = Array.isArray(userAns)
+      ? userAns.length > 0
+      : (userAns !== undefined && userAns !== '');
+
+    if (hasUserAns && userAns !== undefined) {
       evaluatedCount++;
-      const { score, isMatch, note } = evaluateCategoryMatch(key, userAns, myAns);
+      const { score, isMatch, note } = evaluateCategoryMatch(key, userAns, myAns || '');
       totalScore += score;
       breakdown.push({
         category: key,
         icon: CATEGORY_METADATA[key].icon,
         label: CATEGORY_METADATA[key].label,
         userAnswer: userAns,
-        myAnswer: myAns,
+        myAnswer: myAns || '',
         isMatch,
         score,
         matchNote: note
@@ -185,7 +224,10 @@ export function calculateMatchDetails(
   }
 
   // Base percentage calculation on categories that are defined in Farhan's preferences
-  const activeEvaluatedCount = breakdown.filter(b => (b.myAnswer || '').trim() !== '').length;
+  const activeEvaluatedCount = breakdown.filter(b => {
+    if (Array.isArray(b.myAnswer)) return b.myAnswer.length > 0;
+    return (b.myAnswer || '').trim() !== '';
+  }).length;
   const maxPossible = activeEvaluatedCount > 0 ? activeEvaluatedCount : 8;
   const percentage = Math.min(100, Math.round((totalScore / maxPossible) * 100));
 

@@ -3,10 +3,10 @@ export interface UserAnswers {
   birthday: string;
   feeling: string;
   favoriteColor: string;
-  favoriteFood: string;
-  favoriteClothes: string;
+  favoriteFood: string[];
+  favoriteClothes: string[];
   favoriteMovie: string;
-  favoriteSong: string;
+  favoriteSubjects: string[];
   favoriteSport: string;
   favoritePlace: string;
   drink: string;
@@ -18,10 +18,10 @@ export interface UserAnswers {
 
 export interface MyPreferences {
   favoriteColor: string;
-  favoriteFood: string;
-  favoriteClothes: string;
+  favoriteFood: string[];
+  favoriteClothes: string[];
   favoriteMovie: string;
-  favoriteSong: string;
+  favoriteSubjects: string[];
   favoriteSport: string;
   favoritePlace: string;
   drink: string;
@@ -41,8 +41,8 @@ export interface MatchCategoryResult {
   category: string;
   icon: string;
   label: string;
-  userAnswer: string;
-  myAnswer: string;
+  userAnswer: string | string[];
+  myAnswer: string | string[];
   isMatch: boolean;
   score: number; // 0 to 1
   matchNote?: string;
@@ -58,7 +58,7 @@ export type StepKey =
   | 'favoriteFood'
   | 'favoriteClothes'
   | 'favoriteMovie'
-  | 'favoriteSong'
+  | 'favoriteSubjects'
   | 'favoriteSport'
   | 'favoritePlace'
   | 'drink'

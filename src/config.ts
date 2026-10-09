@@ -17,10 +17,10 @@ export const MY_NAME = "Farhan";
  */
 export const MY_PREFERENCES: MyPreferences = {
   favoriteColor: "Black",
-  favoriteFood: "",
-  favoriteClothes: "",
+  favoriteFood: [],
+  favoriteClothes: [],
   favoriteMovie: "Titanic",
-  favoriteSong: "",
+  favoriteSubjects: [],
   favoriteSport: "Football",
   favoritePlace: "Skardu",
   drink: "Tea",

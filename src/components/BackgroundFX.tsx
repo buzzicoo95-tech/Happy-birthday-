@@ -73,7 +73,7 @@ export const BackgroundFX: React.FC<BackgroundFXProps> = ({ feeling, heartRainOv
   }, []);
 
   return (
-    <div className="fixed inset-0 pointer-events-none -z-10 overflow-hidden select-none">
+    <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden select-none" style={{ zIndex: 0 }}>
       {/* Base Pure White + Soft Blush Pink Gradient */}
       <div className={`absolute inset-0 bg-gradient-to-b transition-colors duration-1000 ${moodGradient}`} />
 

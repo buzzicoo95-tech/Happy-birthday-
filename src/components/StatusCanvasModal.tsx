@@ -497,12 +497,12 @@ export const StatusCanvasModal: React.FC<StatusCanvasModalProps> = ({
 
           <button
             onClick={handleCopyCaption}
-            className="w-full py-3.5 px-4 rounded-xl font-semibold text-sm text-[#5A3D4A] bg-[#FDE8F1] hover:bg-[#F8C8DC] border border-[#F8C8DC] flex items-center justify-center gap-2 cursor-pointer active:scale-95 transition-all"
+            className="w-full py-3.5 px-4 rounded-xl font-bold text-sm text-[#5A3D4A] bg-[#FDE8F1] hover:bg-[#F8C8DC] border-2 border-[#E889AD]/60 hover:border-[#DE5180] flex items-center justify-center gap-2 cursor-pointer active:scale-95 transition-all"
           >
             {isCopied ? (
               <>
-                <Check className="w-4 h-4 text-[#E889AD]" />
-                <span className="text-[#E889AD] font-bold">Caption Copied!</span>
+                <Check className="w-4 h-4 text-[#DE5180]" />
+                <span className="text-[#DE5180] font-bold">Caption Copied!</span>
               </>
             ) : (
               <>
