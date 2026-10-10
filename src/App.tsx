@@ -30,7 +30,7 @@ import {
   getRandomFeedback,
   evaluateCategoryMatch
 } from './utils/similarity';
-import { saveBirthdayResponse, resetSubmissionGuard } from './utils/sheetService';
+import { saveBirthdayResponseToSupabase, resetSupabaseSubmissionGuard } from './utils/supabaseService';
 import { sound } from './utils/sound';
 import { fireCelebrationConfetti, fireFireworksSequence } from './utils/confetti';
 
@@ -58,7 +58,11 @@ const INITIAL_ANSWERS: UserAnswers = {
   timePreference: '',
   tastePreference: '',
   favoriteHobby: '',
-  dreamDestination: ''
+  dreamDestination: '',
+  favoritePersonality: [],
+  freeTimeActivities: [],
+  oneThingWantMost: '',
+  secretMessage: ''
 };
 
 // Preset lists tailored for mobile-first interactive answering
@@ -183,6 +187,52 @@ const DESTINATION_PRESETS = [
   'Other'
 ];
 
+const PERSONALITY_PRESETS = [
+  '😎 Chill',
+  '😂 Funny',
+  '🥰 Caring',
+  '🤫 Quiet',
+  '🔥 Adventurous',
+  '📚 Studious',
+  '😴 Sleepy',
+  '🫶 Emotional',
+  '😇 Kind',
+  '💪 Confident',
+  '🤝 Friendly',
+  '🌟 Other'
+];
+
+const FREETIME_PRESETS = [
+  '🎮 Gaming',
+  '🎬 Movies / Dramas',
+  '📱 Social Media',
+  '🎧 Listening to Music',
+  '📚 Reading',
+  '⚽ Sports',
+  '😴 Sleeping',
+  '👥 Spending Time With Friends',
+  '🌳 Outdoor Activities',
+  '✈️ Travelling',
+  '📸 Photography',
+  '💻 Using Computer',
+  '🍳 Cooking',
+  '🌟 Other'
+];
+
+const WANTMOST_PRESETS = [
+  '✈️ Travel',
+  '💰 Success',
+  '😊 Happiness',
+  '👨‍👩‍👧 Family Happiness',
+  '🎓 Education',
+  '💼 Career Success',
+  '🕋 Hajj',
+  '🕌 Umrah',
+  '🏠 Dream House',
+  '❤️ Love',
+  '🌟 Other'
+];
+
 export default function App() {
   const [currentStep, setCurrentStep] = useState<StepKey>('name');
   const [answers, setAnswers] = useState<UserAnswers>(INITIAL_ANSWERS);
@@ -250,7 +300,7 @@ export default function App() {
     // Trigger match feedback if it's one of the 12 comparison categories
     if (key in MY_PREFERENCES) {
       const prefKey = key as keyof typeof MY_PREFERENCES;
-      const { isMatch } = evaluateCategoryMatch(prefKey, value, MY_PREFERENCES[prefKey]);
+      const { isMatch } = evaluateCategoryMatch(prefKey, value, MY_PREFERENCES[prefKey] || '');
       if (isMatch) {
         sound.playMatchChime();
       }
@@ -262,9 +312,9 @@ export default function App() {
     setCurrentStep(nextStep);
   };
 
-  // Helper to toggle multi-select options (Food, Clothes, Subjects)
+  // Helper to toggle multi-select options (Food, Clothes, Subjects, Personality, Free Time)
   const handleToggleMultiSelect = (
-    key: 'favoriteFood' | 'favoriteClothes' | 'favoriteSubjects',
+    key: 'favoriteFood' | 'favoriteClothes' | 'favoriteSubjects' | 'favoritePersonality' | 'freeTimeActivities',
     rawItemValue: string
   ) => {
     sound.playPop();
@@ -280,7 +330,7 @@ export default function App() {
     // If an added item matches Farhan's preference, trigger match feedback
     if (!exists && key in MY_PREFERENCES) {
       const prefKey = key as keyof typeof MY_PREFERENCES;
-      const { isMatch } = evaluateCategoryMatch(prefKey, updated, MY_PREFERENCES[prefKey]);
+      const { isMatch } = evaluateCategoryMatch(prefKey, updated, MY_PREFERENCES[prefKey] || []);
       if (isMatch) {
         sound.playMatchChime();
         const feedback = getRandomFeedback(true);
@@ -292,7 +342,7 @@ export default function App() {
 
   // Helper to add custom typed multi-select option
   const handleAddCustomMultiSelect = (
-    key: 'favoriteFood' | 'favoriteClothes' | 'favoriteSubjects'
+    key: 'favoriteFood' | 'favoriteClothes' | 'favoriteSubjects' | 'favoritePersonality' | 'freeTimeActivities'
   ) => {
     const trimmed = customInput.trim();
     if (!trimmed) return;
@@ -305,14 +355,14 @@ export default function App() {
     setCustomInput('');
   };
 
-  // Submit response to Google Sheets on final match reveal with submission guard
+  // Submit response to Supabase on final match reveal with submission guard
   useEffect(() => {
     if (currentStep === 'final_match' && !hasSubmitted) {
       setHasSubmitted(true);
       setIsSaving(true);
       setSaveStatusMessage('Saving your answers... ❤️');
 
-      saveBirthdayResponse(answers, matchDetails.percentage)
+      saveBirthdayResponseToSupabase(answers, matchDetails.percentage)
         .then(res => {
           setIsSaving(false);
           if (res.success) {
@@ -323,7 +373,8 @@ export default function App() {
             setSaveStatusMessage("We couldn't save your answers right now, but your birthday surprise can continue. ❤️");
           }
         })
-        .catch(() => {
+        .catch((err) => {
+          console.error("Supabase save error:", err);
           setIsSaving(false);
           setSaveSuccess(false);
           setSaveStatusMessage("We couldn't save your answers right now, but your birthday surprise can continue. ❤️");
@@ -364,7 +415,7 @@ export default function App() {
   // Restart function
   const handleRestart = () => {
     sound.playClick();
-    resetSubmissionGuard();
+    resetSupabaseSubmissionGuard();
     setAnswers(INITIAL_ANSWERS);
     setHasSubmitted(false);
     setIsSaving(false);
@@ -432,7 +483,11 @@ export default function App() {
           'timePreference',
           'tastePreference',
           'favoriteHobby',
-          'dreamDestination'
+          'dreamDestination',
+          'favoritePersonality',
+          'freeTimeActivities',
+          'oneThingWantMost',
+          'secretMessage'
         ].includes(currentStep) && (
           <div className="border-t border-[#F8C8DC]/50 bg-white/70 backdrop-blur-sm py-2 px-4 shadow-xs">
             <div className="max-w-md mx-auto flex items-center justify-between text-xs font-bold">
@@ -758,7 +813,7 @@ export default function App() {
               className="w-full text-center max-w-md my-auto"
             >
               <span className="text-xs font-bold tracking-wider uppercase text-[#E889AD] mb-2 block">
-                Question 3 of 14
+                Question 1 of 16
               </span>
 
               <h2 className="text-2xl sm:text-3xl font-serif text-[#5A3D4A] font-bold mb-2">
@@ -820,7 +875,7 @@ export default function App() {
               className="w-full text-center max-w-lg my-auto"
             >
               <span className="text-xs font-bold tracking-wider uppercase text-[#E889AD] mb-2 block">
-                Question 4 of 14 • Multi-Select ❤️
+                Question 2 of 16 • Multi-Select ❤️
               </span>
 
               <h2 className="text-2xl sm:text-3xl font-serif text-[#5A3D4A] font-bold mb-2">
@@ -937,7 +992,7 @@ export default function App() {
               className="w-full text-center max-w-lg my-auto"
             >
               <span className="text-xs font-bold tracking-wider uppercase text-[#E889AD] mb-2 block">
-                Question 5 of 14 • Multi-Select 👗
+                Question 3 of 16 • Multi-Select 👗
               </span>
 
               <h2 className="text-2xl sm:text-3xl font-serif text-[#5A3D4A] font-bold mb-2">
@@ -1056,7 +1111,7 @@ export default function App() {
               className="w-full text-center max-w-md my-auto"
             >
               <span className="text-xs font-bold tracking-wider uppercase text-[#E889AD] mb-2 block">
-                Question 6 of 14
+                Question 4 of 16
               </span>
 
               <h2 className="text-2xl sm:text-3xl font-serif text-[#5A3D4A] font-bold mb-2">
@@ -1113,7 +1168,7 @@ export default function App() {
               className="w-full text-center max-w-lg my-auto"
             >
               <span className="text-xs font-bold tracking-wider uppercase text-[#E889AD] mb-2 block">
-                Question 7 of 14 • Multi-Select 📚
+                Question 5 of 16 • Multi-Select 📚
               </span>
 
               <h2 className="text-2xl sm:text-3xl font-serif text-[#5A3D4A] font-bold mb-2">
@@ -1228,7 +1283,7 @@ export default function App() {
               className="w-full text-center max-w-md my-auto"
             >
               <span className="text-xs font-bold tracking-wider uppercase text-[#E889AD] mb-2 block">
-                Question 8 of 14
+                Question 6 of 16
               </span>
 
               <h2 className="text-2xl sm:text-3xl font-serif text-[#5A3D4A] font-bold mb-2">
@@ -1285,7 +1340,7 @@ export default function App() {
               className="w-full text-center max-w-md my-auto"
             >
               <span className="text-xs font-bold tracking-wider uppercase text-[#E889AD] mb-2 block">
-                Question 9 of 14
+                Question 7 of 16
               </span>
 
               <h2 className="text-2xl sm:text-3xl font-serif text-[#5A3D4A] font-bold mb-2">
@@ -1342,7 +1397,7 @@ export default function App() {
               className="w-full text-center max-w-md my-auto"
             >
               <span className="text-xs font-bold tracking-wider uppercase text-[#E889AD] mb-2 block">
-                Question 10 of 14
+                Question 8 of 16
               </span>
 
               <h2 className="text-2xl sm:text-3xl font-serif text-[#5A3D4A] font-bold mb-2">
@@ -1384,7 +1439,7 @@ export default function App() {
               className="w-full text-center max-w-md my-auto"
             >
               <span className="text-xs font-bold tracking-wider uppercase text-[#E889AD] mb-2 block">
-                Question 11 of 14
+                Question 9 of 16
               </span>
 
               <h2 className="text-2xl sm:text-3xl font-serif text-[#5A3D4A] font-bold mb-2">
@@ -1427,7 +1482,7 @@ export default function App() {
               className="w-full text-center max-w-md my-auto"
             >
               <span className="text-xs font-bold tracking-wider uppercase text-[#E889AD] mb-2 block">
-                Question 12 of 14
+                Question 10 of 16
               </span>
 
               <h2 className="text-2xl sm:text-3xl font-serif text-[#5A3D4A] font-bold mb-2">
@@ -1476,7 +1531,7 @@ export default function App() {
               className="w-full text-center max-w-md my-auto"
             >
               <span className="text-xs font-bold tracking-wider uppercase text-[#E889AD] mb-2 block">
-                Question 13 of 14
+                Question 11 of 16
               </span>
 
               <h2 className="text-2xl sm:text-3xl font-serif text-[#5A3D4A] font-bold mb-2">
@@ -1533,7 +1588,7 @@ export default function App() {
               className="w-full text-center max-w-md my-auto"
             >
               <span className="text-xs font-bold tracking-wider uppercase text-[#E889AD] mb-2 block">
-                Question 14 of 14
+                Question 12 of 16
               </span>
 
               <h2 className="text-2xl sm:text-3xl font-serif text-[#5A3D4A] font-bold mb-2">
@@ -1548,7 +1603,7 @@ export default function App() {
                 {DESTINATION_PRESETS.filter(d => d !== 'Other').map((dest) => (
                   <button
                     key={dest}
-                    onClick={() => handleSelectAnswer('dreamDestination', dest.replace(/[^\w\s()&]/gi, '').trim(), 'final_match')}
+                    onClick={() => handleSelectAnswer('dreamDestination', dest.replace(/[^\w\s()&]/gi, '').trim(), 'favoritePersonality')}
                     className="w-full p-3.5 rounded-2xl btn-option text-left text-xs sm:text-sm font-bold text-[#2D1B24] transition-all cursor-pointer shadow-xs active:scale-98 relative z-20"
                   >
                     <span>{dest}</span>
@@ -1565,16 +1620,378 @@ export default function App() {
                   className="flex-1 py-3 px-4 rounded-xl glass-input text-xs sm:text-sm text-[#5A3D4A] placeholder-[#5A3D4A]/50 outline-none"
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && customInput.trim()) {
-                      handleSelectAnswer('dreamDestination', customInput.trim(), 'final_match');
+                      handleSelectAnswer('dreamDestination', customInput.trim(), 'favoritePersonality');
                     }
                   }}
                 />
                 <button
                   disabled={!customInput.trim()}
-                  onClick={() => handleSelectAnswer('dreamDestination', customInput.trim(), 'final_match')}
+                  onClick={() => handleSelectAnswer('dreamDestination', customInput.trim(), 'favoritePersonality')}
                   className="px-5 py-3 rounded-xl btn-pink-gradient disabled:opacity-50 text-white font-bold text-xs cursor-pointer"
                 >
                   Confirm
+                </button>
+              </div>
+            </motion.div>
+          )}
+
+          {/* ================================================================ */}
+          {/* 13. FAVORITE PERSONALITY (Multi-Select) */}
+          {/* ================================================================ */}
+          {currentStep === 'favoritePersonality' && (
+            <motion.div
+              key="step-personality"
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -15 }}
+              className="w-full text-center max-w-lg my-auto"
+            >
+              <span className="text-xs font-bold tracking-wider uppercase text-[#E889AD] mb-2 block">
+                Question 13 of 16 • Multi-Select ❤️
+              </span>
+
+              <h2 className="text-2xl sm:text-3xl font-serif text-[#5A3D4A] font-bold mb-2">
+                Which personality traits describe you? ❤️
+              </h2>
+
+              <p className="text-xs sm:text-sm text-[#5A3D4A]/70 mb-5">
+                Select multiple traits that match your real vibe!
+              </p>
+
+              {/* Personality Options Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 mb-5 max-h-[46vh] overflow-y-auto p-1 rounded-2xl">
+                {PERSONALITY_PRESETS.filter(p => p !== '🌟 Other').map((trait) => {
+                  const cleanTrait = trait.replace(/^[^\w\s]+\s*/, '').trim() || trait.trim();
+                  const isSelected = (answers.favoritePersonality || []).includes(cleanTrait);
+                  return (
+                    <motion.button
+                      key={trait}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => handleToggleMultiSelect('favoritePersonality', trait)}
+                      className={`p-3 rounded-2xl flex items-center justify-between text-left text-xs sm:text-sm font-bold transition-all cursor-pointer relative z-20 ${
+                        isSelected
+                          ? 'btn-option-selected'
+                          : 'btn-option'
+                      }`}
+                    >
+                      <span className="line-clamp-1">{trait}</span>
+                      {isSelected ? (
+                        <span className="w-5 h-5 rounded-full bg-white text-[#96123E] flex items-center justify-center shrink-0 ml-1.5 shadow-xs">
+                          <Check className="w-3.5 h-3.5 stroke-[3]" />
+                        </span>
+                      ) : (
+                        <span className="w-4 h-4 rounded-full border-2 border-[#F3A5C2] shrink-0 ml-1.5 opacity-60" />
+                      )}
+                    </motion.button>
+                  );
+                })}
+              </div>
+
+              {/* Selected summary chips */}
+              {(answers.favoritePersonality || []).length > 0 && (
+                <div className="mb-4 flex flex-wrap items-center justify-center gap-1.5 px-2">
+                  <span className="text-[11px] font-bold text-[#E889AD] uppercase tracking-wider mr-1">
+                    Selected ({(answers.favoritePersonality || []).length}):
+                  </span>
+                  {(answers.favoritePersonality || []).map((t) => (
+                    <span
+                      key={t}
+                      onClick={() => handleToggleMultiSelect('favoritePersonality', t)}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#FDE8F1] border border-[#F8C8DC] text-[#96123E] cursor-pointer hover:bg-rose-100 transition-colors"
+                      title="Click to remove"
+                    >
+                      <span>{t}</span>
+                      <span className="text-xs leading-none">×</span>
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {/* Custom Input */}
+              <div className="flex gap-2 mb-4 relative z-20">
+                <input
+                  type="text"
+                  placeholder="Or type another trait..."
+                  value={customInput}
+                  onChange={(e) => setCustomInput(e.target.value)}
+                  className="flex-1 py-3 px-4 rounded-xl glass-input text-xs sm:text-sm text-[#5A3D4A] placeholder-[#5A3D4A]/50 outline-none"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleAddCustomMultiSelect('favoritePersonality');
+                    }
+                  }}
+                />
+                <button
+                  type="button"
+                  disabled={!customInput.trim()}
+                  onClick={() => handleAddCustomMultiSelect('favoritePersonality')}
+                  className="px-4 py-3 rounded-xl btn-pink-gradient disabled:opacity-50 text-white font-bold text-xs cursor-pointer shrink-0"
+                >
+                  Add ➕
+                </button>
+              </div>
+
+              {/* Continue Button */}
+              <button
+                disabled={(answers.favoritePersonality || []).length === 0}
+                onClick={() => {
+                  sound.playClick();
+                  setCustomInput('');
+                  setCurrentStep('freeTimeActivities');
+                }}
+                className="w-full py-4 rounded-2xl font-bold text-base text-white btn-pink-gradient shadow-lg flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed relative z-20"
+              >
+                <span>
+                  {(answers.favoritePersonality || []).length > 0
+                    ? `Continue (${(answers.favoritePersonality || []).length} Selected) ❤️`
+                    : 'Select at least one trait'}
+                </span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </motion.div>
+          )}
+
+          {/* ================================================================ */}
+          {/* 14. FREE TIME ACTIVITIES (Multi-Select) */}
+          {/* ================================================================ */}
+          {currentStep === 'freeTimeActivities' && (
+            <motion.div
+              key="step-freetime"
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -15 }}
+              className="w-full text-center max-w-lg my-auto"
+            >
+              <span className="text-xs font-bold tracking-wider uppercase text-[#E889AD] mb-2 block">
+                Question 14 of 16 • Multi-Select 🎮
+              </span>
+
+              <h2 className="text-2xl sm:text-3xl font-serif text-[#5A3D4A] font-bold mb-2">
+                What do you like doing in your free time? 🎮
+              </h2>
+
+              <p className="text-xs sm:text-sm text-[#5A3D4A]/70 mb-5">
+                Pick everything you enjoy doing to relax and unwind!
+              </p>
+
+              {/* Free Time Options Grid */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 mb-5 max-h-[46vh] overflow-y-auto p-1 rounded-2xl">
+                {FREETIME_PRESETS.filter(f => f !== '🌟 Other').map((act) => {
+                  const cleanAct = act.replace(/^[^\w\s]+\s*/, '').trim() || act.trim();
+                  const isSelected = (answers.freeTimeActivities || []).includes(cleanAct);
+                  return (
+                    <motion.button
+                      key={act}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => handleToggleMultiSelect('freeTimeActivities', act)}
+                      className={`p-3 rounded-2xl flex items-center justify-between text-left text-xs sm:text-sm font-bold transition-all cursor-pointer relative z-20 ${
+                        isSelected
+                          ? 'btn-option-selected'
+                          : 'btn-option'
+                      }`}
+                    >
+                      <span className="line-clamp-1">{act}</span>
+                      {isSelected ? (
+                        <span className="w-5 h-5 rounded-full bg-white text-[#96123E] flex items-center justify-center shrink-0 ml-1.5 shadow-xs">
+                          <Check className="w-3.5 h-3.5 stroke-[3]" />
+                        </span>
+                      ) : (
+                        <span className="w-4 h-4 rounded-full border-2 border-[#F3A5C2] shrink-0 ml-1.5 opacity-60" />
+                      )}
+                    </motion.button>
+                  );
+                })}
+              </div>
+
+              {/* Selected summary chips */}
+              {(answers.freeTimeActivities || []).length > 0 && (
+                <div className="mb-4 flex flex-wrap items-center justify-center gap-1.5 px-2">
+                  <span className="text-[11px] font-bold text-[#E889AD] uppercase tracking-wider mr-1">
+                    Selected ({(answers.freeTimeActivities || []).length}):
+                  </span>
+                  {(answers.freeTimeActivities || []).map((a) => (
+                    <span
+                      key={a}
+                      onClick={() => handleToggleMultiSelect('freeTimeActivities', a)}
+                      className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-[#FDE8F1] border border-[#F8C8DC] text-[#96123E] cursor-pointer hover:bg-rose-100 transition-colors"
+                      title="Click to remove"
+                    >
+                      <span>{a}</span>
+                      <span className="text-xs leading-none">×</span>
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {/* Custom Input */}
+              <div className="flex gap-2 mb-4 relative z-20">
+                <input
+                  type="text"
+                  placeholder="Or custom activity..."
+                  value={customInput}
+                  onChange={(e) => setCustomInput(e.target.value)}
+                  className="flex-1 py-3 px-4 rounded-xl glass-input text-xs sm:text-sm text-[#5A3D4A] placeholder-[#5A3D4A]/50 outline-none"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleAddCustomMultiSelect('freeTimeActivities');
+                    }
+                  }}
+                />
+                <button
+                  type="button"
+                  disabled={!customInput.trim()}
+                  onClick={() => handleAddCustomMultiSelect('freeTimeActivities')}
+                  className="px-4 py-3 rounded-xl btn-pink-gradient disabled:opacity-50 text-white font-bold text-xs cursor-pointer shrink-0"
+                >
+                  Add ➕
+                </button>
+              </div>
+
+              {/* Continue Button */}
+              <button
+                disabled={(answers.freeTimeActivities || []).length === 0}
+                onClick={() => {
+                  sound.playClick();
+                  setCustomInput('');
+                  setCurrentStep('oneThingWantMost');
+                }}
+                className="w-full py-4 rounded-2xl font-bold text-base text-white btn-pink-gradient shadow-lg flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed relative z-20"
+              >
+                <span>
+                  {(answers.freeTimeActivities || []).length > 0
+                    ? `Continue (${(answers.freeTimeActivities || []).length} Selected) ❤️`
+                    : 'Select at least one activity'}
+                </span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </motion.div>
+          )}
+
+          {/* ================================================================ */}
+          {/* 15. ONE THING YOU WANT MOST (Single Choice) */}
+          {/* ================================================================ */}
+          {currentStep === 'oneThingWantMost' && (
+            <motion.div
+              key="step-want-most"
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -15 }}
+              className="w-full text-center max-w-md my-auto"
+            >
+              <span className="text-xs font-bold tracking-wider uppercase text-[#E889AD] mb-2 block">
+                Question 15 of 16 • Single Choice 💭
+              </span>
+
+              <h2 className="text-2xl sm:text-3xl font-serif text-[#5A3D4A] font-bold mb-2">
+                If you could have one thing you want most, what would you choose? 💭
+              </h2>
+
+              <p className="text-xs sm:text-sm text-[#5A3D4A]/70 mb-6">
+                Choose the one that matters most to your heart right now
+              </p>
+
+              <div className="grid grid-cols-2 gap-2.5 mb-4">
+                {WANTMOST_PRESETS.filter(w => w !== '🌟 Other').map((item) => (
+                  <button
+                    key={item}
+                    onClick={() => handleSelectAnswer('oneThingWantMost', item.replace(/^[^\w\s]+\s*/, '').trim(), 'secretMessage')}
+                    className="p-3.5 rounded-2xl btn-option text-center text-xs sm:text-sm font-bold text-[#2D1B24] transition-all cursor-pointer shadow-xs active:scale-95 relative z-20"
+                  >
+                    <span>{item}</span>
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex gap-2 relative z-20">
+                <input
+                  type="text"
+                  placeholder="Or describe your deepest wish..."
+                  value={customInput}
+                  onChange={(e) => setCustomInput(e.target.value)}
+                  className="flex-1 py-3 px-4 rounded-xl glass-input text-xs sm:text-sm text-[#5A3D4A] placeholder-[#5A3D4A]/50 outline-none"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && customInput.trim()) {
+                      handleSelectAnswer('oneThingWantMost', customInput.trim(), 'secretMessage');
+                    }
+                  }}
+                />
+                <button
+                  disabled={!customInput.trim()}
+                  onClick={() => handleSelectAnswer('oneThingWantMost', customInput.trim(), 'secretMessage')}
+                  className="px-5 py-3 rounded-xl btn-pink-gradient disabled:opacity-50 text-white font-bold text-xs cursor-pointer"
+                >
+                  Confirm
+                </button>
+              </div>
+            </motion.div>
+          )}
+
+          {/* ================================================================ */}
+          {/* 16. SECRET MESSAGE FOR FARHAN (Multiline Text) */}
+          {/* ================================================================ */}
+          {currentStep === 'secretMessage' && (
+            <motion.div
+              key="step-secret-message"
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -15 }}
+              className="w-full text-center max-w-lg my-auto"
+            >
+              <span className="text-xs font-bold tracking-wider uppercase text-[#E889AD] mb-2 block">
+                Question 16 of 16 • A Secret Note 💌
+              </span>
+
+              <h2 className="text-2xl sm:text-3xl font-serif text-[#5A3D4A] font-bold mb-2">
+                Write a secret message for Farhan 💌
+              </h2>
+
+              <p className="text-xs sm:text-sm text-[#5A3D4A]/70 mb-5">
+                Say whatever is in your heart — this will be kept safe and revealed later! (Optional)
+              </p>
+
+              {/* Large Multiline Text Box */}
+              <div className="p-4 sm:p-5 rounded-3xl bg-white border-2 border-[#F8C8DC] shadow-[0_10px_35px_rgba(232,137,173,0.18)] mb-6 text-left relative z-20">
+                <div className="flex items-center justify-between mb-3 border-b border-[#F8C8DC]/50 pb-2">
+                  <span className="text-xs font-bold text-[#E889AD] flex items-center gap-1.5">
+                    <span>💌</span>
+                    <span>Private Note</span>
+                  </span>
+                  <span className="text-[11px] text-[#5A3D4A]/60 font-medium">
+                    To: Farhan ❤️
+                  </span>
+                </div>
+
+                <textarea
+                  rows={5}
+                  value={answers.secretMessage}
+                  onChange={(e) => setAnswers(prev => ({ ...prev, secretMessage: e.target.value }))}
+                  placeholder="Write anything you want to say… ❤️"
+                  className="w-full p-3.5 rounded-2xl bg-[#FFFDF9] border border-[#F8C8DC]/70 text-[#5A3D4A] placeholder-[#5A3D4A]/40 text-sm sm:text-base font-serif italic outline-none focus:border-[#E889AD] focus:ring-2 focus:ring-[#F8C8DC] transition-all resize-none"
+                />
+
+                <div className="flex items-center justify-between mt-2.5 text-[11px] text-[#5A3D4A]/60">
+                  <span>Only revealed at the grand reveal ✨</span>
+                  <span>{answers.secretMessage?.length || 0} characters</span>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="space-y-3 relative z-20">
+                <button
+                  onClick={() => {
+                    sound.playClick();
+                    setCurrentStep('final_match');
+                  }}
+                  className="w-full py-4 rounded-2xl font-bold text-base text-white btn-pink-gradient shadow-lg flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <span>
+                    {answers.secretMessage?.trim()
+                      ? "Seal & See Our Similarity ❤️"
+                      : "Continue to Our Similarity ❤️"}
+                  </span>
+                  <ArrowRight className="w-4 h-4" />
                 </button>
               </div>
             </motion.div>
@@ -1692,9 +2109,10 @@ export default function App() {
           {currentStep === 'open_gift' && (
             <motion.div
               key="step-gift"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
+              initial={{ opacity: 0, y: 24 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
               className="w-full"
             >
               <GiftBox
@@ -1710,9 +2128,10 @@ export default function App() {
           {currentStep === 'personal_letter' && (
             <motion.div
               key="step-letter"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
+              initial={{ opacity: 0, y: 24 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
               className="w-full"
             >
               <EnvelopeLetter
@@ -1741,6 +2160,7 @@ export default function App() {
                 matchResults={matchDetails.breakdown}
                 percentage={matchDetails.percentage}
                 totalMatches={matchDetails.totalMatches}
+                secretMessage={answers.secretMessage}
                 nextSectionLabel={MEMORIES.length > 0 ? "See Our Memories 📸" : "The Big Birthday Reveal 🎉"}
                 onContinue={() => {
                   sound.playClick();
@@ -1816,6 +2236,31 @@ export default function App() {
               <h2 className="text-2xl sm:text-4xl font-serif text-[#E889AD] font-bold mb-6">
                 Happy Birthday, {answers.name || 'Friend'}! 💗
               </h2>
+
+              {/* Secret Message Card (if friend wrote one for Farhan) */}
+              {answers.secretMessage && answers.secretMessage.trim() && (
+                <div className="bg-[#FFFDF9] rounded-3xl p-6 sm:p-7 border-2 border-[#F8C8DC] shadow-[0_12px_35px_rgba(232,137,173,0.2)] mb-6 text-left relative overflow-hidden">
+                  <div className="flex items-center justify-between mb-3 border-b border-[#F8C8DC]/60 pb-2.5">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xl">💌</span>
+                      <span className="font-serif font-bold text-sm sm:text-base text-[#5A3D4A]">
+                        Your Secret Message for Farhan
+                      </span>
+                    </div>
+                    <span className="text-[11px] font-bold text-[#E889AD] bg-[#FDE8F1] px-2.5 py-1 rounded-full border border-[#F8C8DC]">
+                      Special Note ✨
+                    </span>
+                  </div>
+                  <div className="p-4 rounded-2xl bg-white/90 border border-[#F8C8DC]/50 shadow-inner">
+                    <p className="text-sm sm:text-base font-serif italic text-[#5A3D4A] whitespace-pre-wrap leading-relaxed">
+                      "{answers.secretMessage.trim()}"
+                    </p>
+                  </div>
+                  <p className="text-right text-[11px] text-[#E889AD] font-bold mt-2">
+                    Kept forever in our memories ❤️
+                  </p>
+                </div>
+              )}
 
               {/* Heartfelt Wish Card */}
               <div className="bg-white rounded-3xl p-6 sm:p-8 border-2 border-[#F8C8DC] shadow-[0_20px_50px_rgba(232,137,173,0.25)] my-6 relative overflow-hidden">

@@ -1,7 +1,7 @@
 // =========================================================================
 // SOULSYNC BIRTHDAY EXPERIENCE - GOOGLE APPS SCRIPT WEB APP
 // =========================================================================
-const SPREADSHEET_ID = "YOUR_SPREADSHEET_ID";
+const SPREADSHEET_ID = "1l9soUjugWWyA2lKO0lAQ4CLRgJfENK2Bk0RbXwcglAY";
 const SHEET_NAME = "Birthday Responses";
 
 const HEADERS = [
@@ -14,7 +14,6 @@ const HEADERS = [
   "Favorite Food",
   "Favorite Clothes",
   "Favorite Movie",
-  "Favorite Song",
   "Favorite Sport",
   "Favorite Place",
   "Tea or Coffee",
@@ -22,10 +21,25 @@ const HEADERS = [
   "Sweet or Spicy",
   "Favorite Hobby",
   "Dream Destination",
+  "Favorite Subjects",
+  "Favorite Personality",
+  "Free Time Activities",
+  "One Thing They Want Most",
+  "Secret Message",
   "Similarity Score"
 ];
 
 function doPost(e) {
+  const lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(15000);
+  } catch (lockError) {
+    return jsonResponse({
+      success: false,
+      error: "Server is busy. Please try again."
+    });
+  }
+
   try {
     if (!e || !e.postData || !e.postData.contents) {
       return jsonResponse({
@@ -44,7 +58,8 @@ function doPost(e) {
     }
 
     if (sheet.getLastRow() === 0) {
-      sheet.getRange(1, 1, 1, HEADERS.length).setValues([HEADERS]);
+      sheet.appendRow(HEADERS);
+      sheet.setFrozenRows(1);
     }
 
     const submissionId = String(data.submissionId || "").trim();
@@ -81,7 +96,6 @@ function doPost(e) {
       data.favoriteFood || "",
       data.favoriteClothes || "",
       data.favoriteMovie || "",
-      data.favoriteSong || "",
       data.favoriteSport || "",
       data.favoritePlace || "",
       data.drink || "",
@@ -89,6 +103,11 @@ function doPost(e) {
       data.tastePreference || "",
       data.favoriteHobby || "",
       data.dreamDestination || "",
+      data.favoriteSubjects || "",
+      data.favoritePersonality || "",
+      data.freeTimeActivities || "",
+      data.oneThingWantMost || "",
+      data.secretMessage || "",
       Number(data.similarityScore) || 0
     ]);
 
@@ -103,6 +122,10 @@ function doPost(e) {
       success: false,
       error: error.message || String(error)
     });
+  } finally {
+    try {
+      lock.releaseLock();
+    } catch (e) {}
   }
 }
 

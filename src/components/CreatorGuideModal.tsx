@@ -13,15 +13,16 @@ export const CreatorGuideModal: React.FC<CreatorGuideModalProps> = ({ isOpen, on
   const [copiedCode, setCopiedCode] = useState(false);
 
   const sampleAppsScriptCode = `// SOULSYNC BIRTHDAY GOOGLE APPS SCRIPT WEB APP
-const SPREADSHEET_ID = "YOUR_SPREADSHEET_ID";
+const SPREADSHEET_ID = "1l9soUjugWWyA2lKO0lAQ4CLRgJfENK2Bk0RbXwcglAY";
 const SHEET_NAME = "Birthday Responses";
 
 const HEADERS = [
   "Submission ID", "Timestamp", "Name", "Birthday", "Feeling",
   "Favorite Color", "Favorite Food", "Favorite Clothes", "Favorite Movie",
-  "Favorite Song", "Favorite Sport", "Favorite Place", "Tea or Coffee",
-  "Morning or Night", "Sweet or Spicy", "Favorite Hobby", "Dream Destination",
-  "Similarity Score"
+  "Favorite Sport", "Favorite Place", "Tea or Coffee", "Morning or Night",
+  "Sweet or Spicy", "Favorite Hobby", "Dream Destination", "Favorite Subjects",
+  "Favorite Personality", "Free Time Activities", "One Thing They Want Most",
+  "Secret Message", "Similarity Score"
 ];
 
 function doPost(e) {
@@ -47,7 +48,7 @@ function doPost(e) {
     if (data.submissionId && sheet.getLastRow() > 1) {
       const existingIds = sheet.getRange(2, 1, sheet.getLastRow() - 1, 1).getValues().flat();
       if (existingIds.includes(data.submissionId)) {
-        return ContentService.createTextOutput(JSON.stringify({ status: "success", duplicate: true }))
+        return ContentService.createTextOutput(JSON.stringify({ success: true, duplicate: true, message: "Submission already saved." }))
           .setMimeType(ContentService.MimeType.JSON);
       }
     }
@@ -55,19 +56,21 @@ function doPost(e) {
     const row = [
       data.submissionId, data.timestamp, data.name, data.birthday,
       data.feeling, data.favoriteColor, data.favoriteFood, data.favoriteClothes,
-      data.favoriteMovie, data.favoriteSong, data.favoriteSport, data.favoritePlace,
+      data.favoriteMovie, data.favoriteSport, data.favoritePlace,
       data.drink, data.timePreference, data.tastePreference, data.favoriteHobby,
-      data.dreamDestination, data.similarityScore + "%"
+      data.dreamDestination, data.favoriteSubjects, data.favoritePersonality,
+      data.freeTimeActivities, data.oneThingWantMost, data.secretMessage,
+      Number(data.similarityScore) || 0
     ];
 
     sheet.appendRow(row);
-    return ContentService.createTextOutput(JSON.stringify({ status: "success" }))
+    return ContentService.createTextOutput(JSON.stringify({ success: true, duplicate: false, message: "Submission saved successfully." }))
       .setMimeType(ContentService.MimeType.JSON);
   } catch (err) {
-    return ContentService.createTextOutput(JSON.stringify({ status: "error", message: err.toString() }))
+    return ContentService.createTextOutput(JSON.stringify({ success: false, error: err.toString() }))
       .setMimeType(ContentService.MimeType.JSON);
   } finally {
-    lock.releaseLock();
+    try { lock.releaseLock(); } catch(e) {}
   }
 }`;
 

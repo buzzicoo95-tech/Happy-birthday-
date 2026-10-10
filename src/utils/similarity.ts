@@ -29,13 +29,18 @@ export function evaluateCategoryMatch(
       return { score: 0, isMatch: false };
     }
 
-    // Find shared items (exact or substring match)
-    const shared = uArr.filter(u =>
+    // Count how many items match
+    const matchedFarhanItems = mArr.filter(m =>
+      uArr.some(u => u === m || u.includes(m) || m.includes(u))
+    );
+    const matchedUserItems = uArr.filter(u =>
       mArr.some(m => u === m || u.includes(m) || m.includes(u))
     );
 
-    if (shared.length > 0) {
-      const matchRatio = shared.length / Math.max(1, Math.min(uArr.length, mArr.length));
+    const matchCount = Math.max(matchedFarhanItems.length, matchedUserItems.length);
+
+    if (matchCount > 0) {
+      const matchRatio = matchCount / Math.max(1, mArr.length);
       const score = Math.min(1.0, Math.max(0.5, matchRatio));
       const label =
         category === 'favoriteFood'
@@ -44,11 +49,15 @@ export function evaluateCategoryMatch(
           ? 'styles'
           : category === 'favoriteSubjects'
           ? 'subjects'
+          : category === 'favoritePersonality'
+          ? 'personality traits'
+          : category === 'freeTimeActivities'
+          ? 'activities'
           : 'items';
       return {
         score,
         isMatch: true,
-        note: `${shared.length} shared ${label}! 💕`
+        note: `${matchCount} shared ${label}! 💕`
       };
     }
 
@@ -143,6 +152,22 @@ export function evaluateCategoryMatch(
     }
   }
 
+  // One Thing Want Most
+  if (category === 'oneThingWantMost') {
+    if (u === m || u.includes(m) || m.includes(u)) {
+      return { score: 1.0, isMatch: true, note: 'Shared heart wish! ✨' };
+    }
+    if ((u.includes('hajj') || u.includes('umrah')) && (m.includes('hajj') || m.includes('umrah'))) {
+      return { score: 1.0, isMatch: true, note: 'Sacred pilgrimage 🕋' };
+    }
+    if (
+      (u.includes('happiness') && m.includes('happiness')) ||
+      (u.includes('success') && m.includes('success'))
+    ) {
+      return { score: 1.0, isMatch: true, note: 'Kindred spirit! 💖' };
+    }
+  }
+
   // Word token overlap for free-text answers (movies, sports, places, hobbies, destinations)
   const uWords = u.split(/\s+/).filter(w => w.length > 3);
   const mWords = m.split(/\s+/).filter(w => w.length > 3);
@@ -169,7 +194,10 @@ export const CATEGORY_METADATA: Record<
   timePreference: { label: 'Morning or Night', icon: '🌅' },
   tastePreference: { label: 'Sweet or Spicy', icon: '🍫' },
   favoriteHobby: { label: 'Favorite Hobby', icon: '🎯' },
-  dreamDestination: { label: 'Dream Destination', icon: '🕋' }
+  dreamDestination: { label: 'Dream Destination', icon: '🕋' },
+  favoritePersonality: { label: 'Personality Traits', icon: '❤️' },
+  freeTimeActivities: { label: 'Free Time Activities', icon: '🎮' },
+  oneThingWantMost: { label: 'One Thing Want Most', icon: '💭' }
 };
 
 export const CATEGORY_KEYS: (keyof MyPreferences)[] = [
@@ -184,7 +212,10 @@ export const CATEGORY_KEYS: (keyof MyPreferences)[] = [
   'timePreference',
   'tastePreference',
   'favoriteHobby',
-  'dreamDestination'
+  'dreamDestination',
+  'favoritePersonality',
+  'freeTimeActivities',
+  'oneThingWantMost'
 ];
 
 /**

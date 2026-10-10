@@ -10,6 +10,7 @@ interface MeVsYouProps {
   matchResults: MatchCategoryResult[];
   percentage: number;
   totalMatches: number;
+  secretMessage?: string;
   onContinue: () => void;
   nextSectionLabel?: string;
 }
@@ -20,6 +21,7 @@ export const MeVsYou: React.FC<MeVsYouProps> = ({
   matchResults,
   percentage,
   totalMatches,
+  secretMessage,
   onContinue,
   nextSectionLabel = "See Our Memories 📸"
 }) => {
@@ -160,7 +162,7 @@ export const MeVsYou: React.FC<MeVsYouProps> = ({
 
         <div className="flex items-center justify-center gap-5 my-5">
           <div className="text-3xl sm:text-4xl font-extrabold text-[#5A3D4A]">
-            {totalMatches} <span className="text-xl sm:text-2xl text-[#5A3D4A]/50 font-normal">/ 12</span>
+            {totalMatches} <span className="text-xl sm:text-2xl text-[#5A3D4A]/50 font-normal">/ {matchResults.length}</span>
           </div>
           <div className="h-8 w-px bg-[#F8C8DC]" />
           <div className="text-3xl sm:text-4xl font-extrabold text-[#E889AD]">
@@ -186,6 +188,38 @@ export const MeVsYou: React.FC<MeVsYouProps> = ({
           </div>
         )}
       </motion.div>
+
+      {/* Secret Message for Farhan (if provided) */}
+      {secretMessage && secretMessage.trim() && (
+        <motion.div
+          initial={{ opacity: 0, y: 15 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6 }}
+          className="mt-6 rounded-3xl p-6 sm:p-7 bg-[#FFFDF9] border-2 border-[#F8C8DC] shadow-[0_10px_35px_rgba(232,137,173,0.18)] relative overflow-hidden text-left"
+        >
+          <div className="flex items-center justify-between mb-3 border-b border-[#F8C8DC]/60 pb-2.5">
+            <div className="flex items-center gap-2">
+              <span className="text-xl">💌</span>
+              <span className="font-serif font-bold text-sm sm:text-base text-[#5A3D4A]">
+                Secret Message for {senderName}
+              </span>
+            </div>
+            <span className="text-[11px] font-bold text-[#E889AD] bg-[#FDE8F1] px-2.5 py-1 rounded-full border border-[#F8C8DC]">
+              From {recipientName}
+            </span>
+          </div>
+
+          <div className="p-4 sm:p-5 rounded-2xl bg-white/80 border border-[#F8C8DC]/50 shadow-inner">
+            <p className="font-serif italic text-sm sm:text-base text-[#5A3D4A] whitespace-pre-wrap leading-relaxed">
+              "{secretMessage.trim()}"
+            </p>
+          </div>
+          <div className="mt-2.5 flex items-center justify-end gap-1.5 text-[11px] text-[#E889AD] font-bold">
+            <span>Sealed with love</span>
+            <span>❤️</span>
+          </div>
+        </motion.div>
+      )}
 
       {/* Continue Button */}
       <div className="mt-8 flex justify-center pb-8">

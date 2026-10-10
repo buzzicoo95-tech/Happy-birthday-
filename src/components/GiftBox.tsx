@@ -37,7 +37,12 @@ export const GiftBox: React.FC<GiftBoxProps> = ({ recipientName, onOpened }) => 
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[70vh] px-4 text-center select-none">
+    <motion.div
+      initial={{ opacity: 0, y: 24 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+      className="flex flex-col items-center justify-center min-h-[70vh] px-4 text-center select-none"
+    >
       <motion.div
         initial={{ opacity: 0, y: 15 }}
         animate={{ opacity: 1, y: 0 }}
@@ -57,7 +62,10 @@ export const GiftBox: React.FC<GiftBoxProps> = ({ recipientName, onOpened }) => 
       </motion.div>
 
       {/* Interactive Pink Gift Box */}
-      <div
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9, y: 25 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ duration: 0.7, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
         onClick={handleOpenGift}
         className="relative cursor-pointer group select-none my-6 p-4"
         role="button"
@@ -173,7 +181,7 @@ export const GiftBox: React.FC<GiftBoxProps> = ({ recipientName, onOpened }) => 
             🌸
           </span>
         </div>
-      </div>
+      </motion.div>
 
       {/* Button prompt */}
       <motion.button
@@ -186,6 +194,6 @@ export const GiftBox: React.FC<GiftBoxProps> = ({ recipientName, onOpened }) => 
         <Sparkles className="w-4 h-4 text-white" />
         <span>{isOpen ? 'Unwrapping Magic... 💕' : 'OPEN YOUR SURPRISE 🎁'}</span>
       </motion.button>
-    </div>
+    </motion.div>
   );
 };

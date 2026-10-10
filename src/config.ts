@@ -17,17 +17,20 @@ export const MY_NAME = "Farhan";
  */
 export const MY_PREFERENCES: MyPreferences = {
   favoriteColor: "Black",
-  favoriteFood: [],
-  favoriteClothes: [],
+  favoriteFood: ["Biryani", "Sabzi", "Chicken"],
+  favoriteClothes: ["Pant Shirt", "Shalwar Kameez"],
   favoriteMovie: "Titanic",
-  favoriteSubjects: [],
+  favoriteSubjects: ["Computer", "History", "English"],
   favoriteSport: "Football",
   favoritePlace: "Skardu",
   drink: "Tea",
   timePreference: "Morning",
   tastePreference: "Sweet",
   favoriteHobby: "",
-  dreamDestination: "Hajj and Umrah"
+  dreamDestination: "Hajj and Umrah",
+  favoritePersonality: ["Chill", "Kind", "Friendly"],
+  freeTimeActivities: ["Gaming", "Using Computer", "Listening to Music"],
+  oneThingWantMost: "Happiness"
 };
 
 /**
@@ -75,10 +78,10 @@ export const MEMORIES: MemoryItem[] = [
 /**
  * Google Apps Script Web App Endpoint.
  * Submits the completed survey responses to your personal Google Sheet.
- * Paste your deployed Web App URL here (e.g. "https://script.google.com/macros/s/AKfycb.../exec").
- * If left as default, the app functions normally without breaking or displaying technical errors.
+ * Set your deployed Web App URL here (must end in "/exec").
+ * Example: "https://script.google.com/macros/s/.../exec"
  */
-export const GOOGLE_APPS_SCRIPT_URL = "PASTE_YOUR_DEPLOYED_APPS_SCRIPT_URL_HERE";
+export const GOOGLE_APPS_SCRIPT_URL: string = "";
 
 // =====================================
 // AUDIO / SOUND SYSTEM CONFIGURATION

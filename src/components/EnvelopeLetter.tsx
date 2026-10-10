@@ -47,7 +47,12 @@ export const EnvelopeLetter: React.FC<EnvelopeLetterProps> = ({
   }, [isOpen, lines]);
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[75vh] px-4 py-8 max-w-xl mx-auto text-center select-none">
+    <motion.div
+      initial={{ opacity: 0, y: 24 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+      className="flex flex-col items-center justify-center min-h-[75vh] px-4 py-8 max-w-xl mx-auto text-center select-none"
+    >
       {/* Top Heading */}
       <motion.div
         initial={{ opacity: 0, y: -10 }}
@@ -71,9 +76,10 @@ export const EnvelopeLetter: React.FC<EnvelopeLetterProps> = ({
         {!isOpen ? (
           <motion.div
             key="envelope"
-            initial={{ scale: 0.95, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
+            initial={{ scale: 0.92, opacity: 0, y: 24 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.9, opacity: 0, y: -15 }}
+            transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
             className="w-full max-w-sm cursor-pointer select-none"
             onClick={handleOpenEnvelope}
           >
@@ -197,6 +203,6 @@ export const EnvelopeLetter: React.FC<EnvelopeLetterProps> = ({
           </motion.div>
         )}
       </AnimatePresence>
-    </div>
+    </motion.div>
   );
 };

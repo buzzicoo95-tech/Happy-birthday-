@@ -14,6 +14,10 @@ export interface UserAnswers {
   tastePreference: string;
   favoriteHobby: string;
   dreamDestination: string;
+  favoritePersonality: string[];
+  freeTimeActivities: string[];
+  oneThingWantMost: string;
+  secretMessage: string;
 }
 
 export interface MyPreferences {
@@ -29,6 +33,9 @@ export interface MyPreferences {
   tastePreference: string;
   favoriteHobby: string;
   dreamDestination: string;
+  favoritePersonality?: string[];
+  freeTimeActivities?: string[];
+  oneThingWantMost?: string;
 }
 
 export interface MemoryItem {
@@ -66,6 +73,10 @@ export type StepKey =
   | 'tastePreference'
   | 'favoriteHobby'
   | 'dreamDestination'
+  | 'favoritePersonality'
+  | 'freeTimeActivities'
+  | 'oneThingWantMost'
+  | 'secretMessage'
   | 'final_match'
   | 'open_gift'
   | 'personal_letter'

@@ -19,6 +19,10 @@ export interface SubmissionPayload {
   tastePreference: string;
   favoriteHobby: string;
   dreamDestination: string;
+  favoritePersonality: string;
+  freeTimeActivities: string;
+  oneThingWantMost: string;
+  secretMessage: string;
   similarityScore: number;
 }
 
@@ -78,57 +82,104 @@ export async function saveBirthdayResponse(
     favoriteHobby: answers.favoriteHobby || "",
     dreamDestination: answers.dreamDestination || "",
 
+    favoritePersonality: Array.isArray(answers.favoritePersonality)
+      ? answers.favoritePersonality.join(', ')
+      : (answers.favoritePersonality || ""),
+    freeTimeActivities: Array.isArray(answers.freeTimeActivities)
+      ? answers.freeTimeActivities.join(', ')
+      : (answers.freeTimeActivities || ""),
+    oneThingWantMost: answers.oneThingWantMost || "",
+    secretMessage: answers.secretMessage || "",
+
     similarityScore: Number(finalSimilarityScore) || 0
   };
 
-  const isPlaceholder =
-    !GOOGLE_APPS_SCRIPT_URL ||
-    GOOGLE_APPS_SCRIPT_URL.includes("PASTE_YOUR_DEPLOYED_APPS_SCRIPT_URL_HERE") ||
-    !GOOGLE_APPS_SCRIPT_URL.startsWith("https://script.google.com");
+  const endpointUrl = typeof GOOGLE_APPS_SCRIPT_URL === 'string' ? GOOGLE_APPS_SCRIPT_URL.trim() : '';
+  const isMissingUrl = !endpointUrl || !endpointUrl.startsWith("https://script.google.com");
 
-  if (isPlaceholder) {
+  if (isMissingUrl) {
     submissionStarted = false;
+    console.error(
+      "[Google Sheets Integration] missing Apps Script URL: GOOGLE_APPS_SCRIPT_URL in src/config.ts is empty or not configured. Please deploy the Apps Script Web App and paste the /exec URL into src/config.ts."
+    );
     return {
       success: false,
-      error: "Google Apps Script URL has not been configured yet."
+      error: "missing Apps Script URL: Please provide your deployed Google Apps Script /exec URL in src/config.ts."
     };
   }
 
   try {
-    const response = await fetch(
-      GOOGLE_APPS_SCRIPT_URL,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "text/plain;charset=utf-8"
-        },
-        body: JSON.stringify(submissionData),
-        redirect: "follow"
-      }
-    );
+    const response = await fetch(endpointUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "text/plain;charset=utf-8"
+      },
+      body: JSON.stringify(submissionData),
+      redirect: "follow"
+    });
 
-    const text = await response.text();
-    const result = JSON.parse(text);
+    let text = "";
+    try {
+      text = await response.text();
+    } catch (readErr: any) {
+      submissionStarted = false;
+      console.error(
+        "[Google Sheets Integration] network/fetch failure: Failed to read response stream from Apps Script.",
+        readErr
+      );
+      return {
+        success: false,
+        error: "network/fetch failure: Failed to read response stream."
+      };
+    }
 
-    if (result.success === true) {
+    let result: any = null;
+    try {
+      result = JSON.parse(text);
+    } catch (parseErr) {
+      submissionStarted = false;
+      console.error(
+        "[Google Sheets Integration] invalid Apps Script response: Expected JSON from Google Apps Script, received raw text:",
+        text,
+        parseErr
+      );
+      return {
+        success: false,
+        error: "invalid Apps Script response"
+      };
+    }
+
+    if (result && result.success === true) {
       SENT_SUBMISSION_IDS.add(submissionId);
+      console.log("[Google Sheets Integration] Response saved successfully to spreadsheet:", {
+        submissionId,
+        duplicate: Boolean(result.duplicate)
+      });
       return {
         success: true,
+        duplicate: Boolean(result.duplicate),
         submissionId: submissionData.submissionId
       };
     }
 
     submissionStarted = false;
+    console.error(
+      "[Google Sheets Integration] Apps Script returned success:false. Error details:",
+      result?.error || result
+    );
     return {
       success: false,
-      error: result.error || "Google Sheets save failed."
+      error: result?.error || "Apps Script returned success:false"
     };
   } catch (error: any) {
     submissionStarted = false;
-    console.error("Google Sheets POST error:", error);
+    console.error(
+      "[Google Sheets Integration] network/fetch failure: Failed to complete POST request to Google Apps Script.",
+      error
+    );
     return {
       success: false,
-      error: error.message || "Network error."
+      error: error?.message || "network/fetch failure"
     };
   }
 }
